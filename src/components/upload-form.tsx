@@ -71,24 +71,33 @@ export default function UploadForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="rounded border border-zinc-200 p-4">
-      <h2 className="mb-3 text-sm font-medium text-zinc-600">Upload a file</h2>
+    <form
+      onSubmit={handleSubmit}
+      className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm"
+    >
+      <h2 className="mb-4 text-sm font-medium text-zinc-500">Upload a file</h2>
 
       {error && (
-        <p className="mb-3 rounded bg-red-50 px-3 py-2 text-sm text-red-800">
+        <p className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800">
           {error}
         </p>
       )}
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
         <div className="flex-1">
-          <label htmlFor="file" className="mb-1 block text-sm font-medium">
+          <label htmlFor="file" className="mb-1.5 block text-sm font-medium text-zinc-700">
             File
           </label>
-          <input id="file" name="file" type="file" required className="w-full text-sm" />
+          <input
+            id="file"
+            name="file"
+            type="file"
+            required
+            className="w-full text-sm text-zinc-600 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-blue-700 hover:file:bg-blue-100"
+          />
         </div>
         <div>
-          <label htmlFor="fileType" className="mb-1 block text-sm font-medium">
+          <label htmlFor="fileType" className="mb-1.5 block text-sm font-medium text-zinc-700">
             Type
           </label>
           <select
@@ -96,7 +105,7 @@ export default function UploadForm({
             name="fileType"
             value={fileType}
             onChange={(event) => setFileType(event.target.value)}
-            className="rounded border border-zinc-300 px-3 py-2 text-sm"
+            className="rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
           >
             <option value="mychron">MyChron data</option>
             <option value="video">SmartyCam video</option>
@@ -106,7 +115,7 @@ export default function UploadForm({
         <button
           type="submit"
           disabled={isUploading}
-          className="rounded bg-black px-4 py-2 text-sm text-white hover:bg-zinc-800 disabled:opacity-50"
+          className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
         >
           {isUploading ? "Uploading..." : "Upload"}
         </button>

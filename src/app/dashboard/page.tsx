@@ -10,32 +10,34 @@ export default async function DashboardPage() {
 
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Your sessions</h1>
+      <div className="mb-8 flex items-center justify-between">
+        <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">
+          Your sessions
+        </h1>
         <Link
           href="/dashboard/new"
-          className="rounded bg-black px-4 py-2 text-sm text-white hover:bg-zinc-800"
+          className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
         >
           New session
         </Link>
       </div>
 
       {!sessions || sessions.length === 0 ? (
-        <p className="text-zinc-600">
-          No sessions yet. Create one to start uploading telemetry.
-        </p>
+        <div className="rounded-xl border border-dashed border-zinc-300 bg-white px-6 py-16 text-center">
+          <p className="text-zinc-600">
+            No sessions yet. Create one to start uploading telemetry.
+          </p>
+        </div>
       ) : (
-        <ul className="divide-y divide-zinc-200 rounded border border-zinc-200">
+        <ul className="flex flex-col gap-3">
           {sessions.map((session) => (
             <li key={session.id}>
               <Link
                 href={`/dashboard/sessions/${session.id}`}
-                className="flex items-center justify-between px-4 py-3 hover:bg-zinc-50"
+                className="flex items-center justify-between rounded-xl border border-zinc-200 bg-white px-5 py-4 shadow-sm transition-colors hover:border-blue-300 hover:shadow-md"
               >
-                <span className="font-medium">{session.track_name}</span>
-                <span className="text-sm text-zinc-600">
-                  {session.session_date}
-                </span>
+                <span className="font-medium text-zinc-900">{session.track_name}</span>
+                <span className="text-sm text-zinc-500">{session.session_date}</span>
               </Link>
             </li>
           ))}

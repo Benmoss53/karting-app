@@ -31,60 +31,64 @@ export default async function SetupSheetPage({
 
   return (
     <div className="max-w-2xl">
-      <h1 className="text-2xl font-semibold">Setup sheet</h1>
-      <p className="mb-6 text-sm text-zinc-600">{session.track_name}</p>
+      <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">
+        Setup sheet
+      </h1>
+      <p className="mb-6 text-sm text-zinc-500">{session.track_name}</p>
 
       {error && (
-        <p className="mb-4 rounded bg-red-50 px-3 py-2 text-sm text-red-800">
+        <p className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800">
           {error}
         </p>
       )}
 
-      <form action={upsertSetupSheet} className="flex flex-col gap-6">
-        <input type="hidden" name="sessionId" value={session.id} />
+      <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
+        <form action={upsertSetupSheet} className="flex flex-col gap-6">
+          <input type="hidden" name="sessionId" value={session.id} />
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Field label="Front track" name="frontTrack" defaultValue={setupSheet?.front_track} />
-          <Field label="Rear track" name="rearTrack" defaultValue={setupSheet?.rear_track} />
-          <Field label="Caster" name="caster" defaultValue={setupSheet?.caster} />
-          <Field label="Camber" name="camber" defaultValue={setupSheet?.camber} />
-          <Field label="Toe" name="toe" defaultValue={setupSheet?.toe} />
-          <Field
-            label="Seat position"
-            name="seatPosition"
-            defaultValue={setupSheet?.seat_position}
-          />
-          <Field label="Axle grade" name="axleGrade" defaultValue={setupSheet?.axle_grade} />
-          <Field label="Seat grade" name="seatGrade" defaultValue={setupSheet?.seat_grade} />
-          <Field label="Axle length" name="axleLength" defaultValue={setupSheet?.axle_length} />
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <Field label="Front track" name="frontTrack" defaultValue={setupSheet?.front_track} />
+            <Field label="Rear track" name="rearTrack" defaultValue={setupSheet?.rear_track} />
+            <Field label="Caster" name="caster" defaultValue={setupSheet?.caster} />
+            <Field label="Camber" name="camber" defaultValue={setupSheet?.camber} />
+            <Field label="Toe" name="toe" defaultValue={setupSheet?.toe} />
+            <Field
+              label="Seat position"
+              name="seatPosition"
+              defaultValue={setupSheet?.seat_position}
+            />
+            <Field label="Axle grade" name="axleGrade" defaultValue={setupSheet?.axle_grade} />
+            <Field label="Seat grade" name="seatGrade" defaultValue={setupSheet?.seat_grade} />
+            <Field label="Axle length" name="axleLength" defaultValue={setupSheet?.axle_length} />
 
-          <SelectField
-            label="Front crash bar"
-            name="frontCrashBar"
-            defaultValue={setupSheet?.front_crash_bar}
-            options={["loose", "tight"]}
-          />
-          <SelectField
-            label="Rear crash bar"
-            name="rearCrashBar"
-            defaultValue={setupSheet?.rear_crash_bar}
-            options={["loose", "tight"]}
-          />
-          <SelectField
-            label="Seat stays"
-            name="seatStays"
-            defaultValue={setupSheet?.seat_stays}
-            options={["on", "off"]}
-          />
-        </div>
+            <SelectField
+              label="Front crash bar"
+              name="frontCrashBar"
+              defaultValue={setupSheet?.front_crash_bar}
+              options={["loose", "tight"]}
+            />
+            <SelectField
+              label="Rear crash bar"
+              name="rearCrashBar"
+              defaultValue={setupSheet?.rear_crash_bar}
+              options={["loose", "tight"]}
+            />
+            <SelectField
+              label="Seat stays"
+              name="seatStays"
+              defaultValue={setupSheet?.seat_stays}
+              options={["on", "off"]}
+            />
+          </div>
 
-        <button
-          type="submit"
-          className="self-start rounded bg-black px-4 py-2 text-sm text-white hover:bg-zinc-800"
-        >
-          Save setup sheet
-        </button>
-      </form>
+          <button
+            type="submit"
+            className="inline-flex items-center justify-center self-start rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          >
+            Save setup sheet
+          </button>
+        </form>
+      </div>
     </div>
   );
 }
@@ -100,7 +104,7 @@ function Field({
 }) {
   return (
     <div>
-      <label htmlFor={name} className="mb-1 block text-sm font-medium">
+      <label htmlFor={name} className="mb-1.5 block text-sm font-medium text-zinc-700">
         {label}
       </label>
       <input
@@ -108,7 +112,7 @@ function Field({
         name={name}
         type="text"
         defaultValue={defaultValue ?? ""}
-        className="w-full rounded border border-zinc-300 px-3 py-2"
+        className="w-full rounded-lg border border-zinc-300 px-3 py-2.5 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
       />
     </div>
   );
@@ -127,18 +131,18 @@ function SelectField({
 }) {
   return (
     <div>
-      <label htmlFor={name} className="mb-1 block text-sm font-medium">
+      <label htmlFor={name} className="mb-1.5 block text-sm font-medium text-zinc-700">
         {label}
       </label>
       <select
         id={name}
         name={name}
         defaultValue={defaultValue ?? ""}
-        className="w-full rounded border border-zinc-300 px-3 py-2"
+        className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm capitalize shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
       >
         <option value="">—</option>
         {options.map((option) => (
-          <option key={option} value={option}>
+          <option key={option} value={option} className="capitalize">
             {option}
           </option>
         ))}

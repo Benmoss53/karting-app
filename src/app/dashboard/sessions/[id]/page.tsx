@@ -18,6 +18,45 @@ const SETUP_FIELDS: { label: string; key: string }[] = [
   { label: "Seat stays", key: "seat_stays" },
 ];
 
+const PILL_KEYS = new Set([
+  "front_crash_bar",
+  "rear_crash_bar",
+  "seat_stays",
+]);
+
+const PILL_STYLES: Record<string, string> = {
+  tight: "bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-600/20",
+  on: "bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-600/20",
+  loose: "bg-red-50 text-red-700 ring-1 ring-inset ring-red-600/20",
+  off: "bg-red-50 text-red-700 ring-1 ring-inset ring-red-600/20",
+};
+
+const FILE_TYPE_BADGE: Record<string, string> = {
+  mychron: "bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-600/20",
+  video: "bg-red-50 text-red-700 ring-1 ring-inset ring-red-600/20",
+  other: "bg-zinc-100 text-zinc-700 ring-1 ring-inset ring-zinc-500/20",
+};
+
+function SetupValue({ fieldKey, value }: { fieldKey: string; value: string | null }) {
+  if (!value) return <dd className="text-zinc-400">—</dd>;
+
+  if (PILL_KEYS.has(fieldKey)) {
+    return (
+      <dd>
+        <span
+          className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium capitalize ${
+            PILL_STYLES[value] ?? "bg-zinc-100 text-zinc-700"
+          }`}
+        >
+          {value}
+        </span>
+      </dd>
+    );
+  }
+
+  return <dd className="text-zinc-900">{value}</dd>;
+}
+
 export default async function SessionDetailPage({
   params,
 }: {
@@ -54,51 +93,64 @@ export default async function SessionDetailPage({
 
   return (
     <div className="max-w-2xl">
-      <h1 className="text-2xl font-semibold">{session.track_name}</h1>
-      <p className="mb-6 text-sm text-zinc-600">{session.session_date}</p>
+      <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">
+        {session.track_name}
+      </h1>
+      <p className="mb-8 text-sm text-zinc-500">{session.session_date}</p>
 
       {session.setup_notes && (
-        <div className="mb-8 rounded border border-zinc-200 p-4">
-          <h2 className="mb-2 text-sm font-medium text-zinc-600">Setup notes</h2>
-          <p className="whitespace-pre-wrap">{session.setup_notes}</p>
+        <div className="mb-6 rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
+          <h2 className="mb-2 text-sm font-medium text-zinc-500">Setup notes</h2>
+          <p className="whitespace-pre-wrap text-zinc-900">{session.setup_notes}</p>
         </div>
       )}
 
-      <div className="mb-8 rounded border border-zinc-200 p-4">
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-medium text-zinc-600">Setup sheet</h2>
-          <Link href={`/dashboard/sessions/${session.id}/setup`} className="text-sm underline">
+      <div className="mb-6 rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-sm font-medium text-zinc-500">Setup sheet</h2>
+          <Link
+            href={`/dashboard/sessions/${session.id}/setup`}
+            className="text-sm font-medium text-blue-600 hover:text-blue-700"
+          >
             {setupSheet ? "Edit" : "Add setup sheet"}
           </Link>
         </div>
 
         {setupSheet ? (
-          <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm sm:grid-cols-3">
+          <dl className="grid grid-cols-2 gap-x-6 gap-y-4 text-sm sm:grid-cols-3">
             {SETUP_FIELDS.map(({ label, key }) => (
               <div key={key}>
-                <dt className="text-zinc-500">{label}</dt>
-                <dd>{setupSheet[key] ?? "—"}</dd>
+                <dt className="mb-1 text-zinc-500">{label}</dt>
+                <SetupValue fieldKey={key} value={setupSheet[key]} />
               </div>
             ))}
           </dl>
         ) : (
-          <p className="text-sm text-zinc-600">No setup sheet yet for this session.</p>
+          <p className="text-sm text-zinc-500">No setup sheet yet for this session.</p>
         )}
       </div>
 
-      <h2 className="mb-2 text-sm font-medium text-zinc-600">Files</h2>
-      <ul className="mb-6 divide-y divide-zinc-200 rounded border border-zinc-200">
+      <div className="mb-6 rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
+        <h2 className="mb-4 text-sm font-medium text-zinc-500">Files</h2>
         {!files || files.length === 0 ? (
-          <li className="px-4 py-3 text-sm text-zinc-600">No files uploaded yet.</li>
+          <p className="text-sm text-zinc-500">No files uploaded yet.</p>
         ) : (
-          files.map((file) => (
-            <li key={file.id} className="flex items-center justify-between px-4 py-3">
-              <span>{file.file_name}</span>
-              <span className="text-xs uppercase text-zinc-500">{file.file_type}</span>
-            </li>
-          ))
+          <ul className="flex flex-col divide-y divide-zinc-100">
+            {files.map((file) => (
+              <li key={file.id} className="flex items-center justify-between py-3 first:pt-0 last:pb-0">
+                <span className="text-zinc-900">{file.file_name}</span>
+                <span
+                  className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium uppercase tracking-wide ${
+                    FILE_TYPE_BADGE[file.file_type] ?? FILE_TYPE_BADGE.other
+                  }`}
+                >
+                  {file.file_type}
+                </span>
+              </li>
+            ))}
+          </ul>
         )}
-      </ul>
+      </div>
 
       <UploadForm sessionId={session.id} driverId={user.id} />
     </div>
