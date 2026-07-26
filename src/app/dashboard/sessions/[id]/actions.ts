@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 
 const CRASH_BAR_VALUES = ["loose", "tight"];
 const SEAT_STAYS_VALUES = ["on", "off"];
+const TRACK_CONDITIONS_VALUES = ["dry", "damp", "wet"];
 
 function textOrNull(formData: FormData, key: string) {
   const value = formData.get(key);
@@ -58,4 +59,79 @@ export async function upsertSetupSheet(formData: FormData) {
 
   revalidatePath(`/dashboard/sessions/${sessionId}`);
   redirect(`/dashboard/sessions/${sessionId}`);
+}
+
+export async function upsertWeather(formData: FormData) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  const sessionId = formData.get("sessionId") as string;
+
+  const { error } = await supabase.from("weather_conditions").upsert(
+    {
+      session_id: sessionId,
+      track_conditions: enumOrNull(formData, "trackConditions", TRACK_CONDITIONS_VALUES),
+      air_temp: textOrNull(formData, "airTemp"),
+      track_temp: textOrNull(formData, "trackTemp"),
+      humidity: textOrNull(formData, "humidity"),
+      wind: textOrNull(formData, "wind"),
+      notes: textOrNull(formData, "notes"),
+    },
+    { onConflict: "session_id" },
+  );
+
+  if (error) {
+    redirect(
+      `/dashboard/sessions/${sessionId}/weather?error=${encodeURIComponent(error.message)}`,
+    );
+  }
+
+  revalidatePath(`/dashboard/sessions/${sessionId}`);
+  redirect(`/dashboard/sessions/${sessionId}`);
+}
+
+export async function addCoachEntry(formData: FormData) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  const sessionId = formData.get("sessionId") as string;
+  const changeMade = textOrNull(formData, "changeMade");
+  const reaction = textOrNull(formData, "reaction");
+
+  if (!changeMade || !reaction) {
+    redirect(
+      `/dashboard/sessions/${sessionId}/coach?error=${encodeURIComponent(
+        "Fill in both what you changed and what happened.",
+      )}`,
+    );
+  }
+
+  const { error } = await supabase.from("coach_entries").insert({
+    session_id: sessionId,
+    change_made: changeMade,
+    reaction,
+  });
+
+  if (error) {
+    redirect(
+      `/dashboard/sessions/${sessionId}/coach?error=${encodeURIComponent(error.message)}`,
+    );
+  }
+
+  revalidatePath(`/dashboard/sessions/${sessionId}/coach`);
+  redirect(`/dashboard/sessions/${sessionId}/coach`);
 }

@@ -3,12 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-
-const BUCKET_BY_TYPE: Record<string, string> = {
-  mychron: "telemetry",
-  video: "videos",
-  other: "telemetry",
-};
+import { BUCKET_BY_TYPE } from "@/lib/storage";
 
 export default function UploadForm({
   sessionId,

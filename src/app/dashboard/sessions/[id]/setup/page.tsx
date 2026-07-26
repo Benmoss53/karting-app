@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { upsertSetupSheet } from "../actions";
@@ -31,6 +32,12 @@ export default async function SetupSheetPage({
 
   return (
     <div className="max-w-2xl">
+      <Link
+        href={`/dashboard/sessions/${id}`}
+        className="mb-4 inline-block text-sm font-medium text-blue-600 hover:text-blue-700"
+      >
+        ← {session.track_name}
+      </Link>
       <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">
         Setup sheet
       </h1>
