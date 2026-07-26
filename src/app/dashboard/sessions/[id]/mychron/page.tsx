@@ -5,12 +5,11 @@ import { BUCKET_BY_TYPE } from "@/lib/storage";
 import UploadForm from "@/components/upload-form";
 
 const FILE_TYPE_BADGE: Record<string, string> = {
-  mychron: "bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-600/20",
-  video: "bg-red-50 text-red-700 ring-1 ring-inset ring-red-600/20",
-  other: "bg-zinc-100 text-zinc-700 ring-1 ring-inset ring-zinc-500/20",
+  mychron: "bg-blue-500/10 text-blue-300 ring-1 ring-inset ring-blue-400/20",
+  other: "bg-white/5 text-zinc-300 ring-1 ring-inset ring-white/10",
 };
 
-export default async function FilesPage({
+export default async function MyChronDataPage({
   params,
 }: {
   params: Promise<{ id: string }>;
@@ -36,6 +35,7 @@ export default async function FilesPage({
     .from("telemetry_files")
     .select("id, file_name, file_type, storage_path, uploaded_at")
     .eq("session_id", id)
+    .in("file_type", ["mychron", "other"])
     .order("uploaded_at", { ascending: false });
 
   const filesWithLinks = await Promise.all(
@@ -52,26 +52,26 @@ export default async function FilesPage({
     <div className="max-w-2xl">
       <Link
         href={`/dashboard/sessions/${id}`}
-        className="mb-4 inline-block text-sm font-medium text-blue-600 hover:text-blue-700"
+        className="mb-4 inline-block text-sm font-medium text-blue-400 hover:text-blue-300"
       >
         ← {session.track_name}
       </Link>
-      <h1 className="mb-6 text-2xl font-semibold tracking-tight text-zinc-900">
-        Download MyChron Data
+      <h1 className="mb-6 text-2xl font-semibold tracking-tight text-zinc-50">
+        Upload MyChron Data
       </h1>
 
-      <div className="mb-6 rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
+      <div className="mb-6 rounded-xl border border-white/10 bg-zinc-900/60 p-5 shadow-lg shadow-black/20 backdrop-blur-sm">
         {filesWithLinks.length === 0 ? (
           <p className="text-sm text-zinc-500">No files uploaded yet.</p>
         ) : (
-          <ul className="flex flex-col divide-y divide-zinc-100">
+          <ul className="flex flex-col divide-y divide-white/10">
             {filesWithLinks.map((file) => (
               <li
                 key={file.id}
                 className="flex items-center justify-between py-3 first:pt-0 last:pb-0"
               >
                 <div className="flex items-center gap-3">
-                  <span className="text-zinc-900">{file.file_name}</span>
+                  <span className="text-zinc-100">{file.file_name}</span>
                   <span
                     className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium uppercase tracking-wide ${
                       FILE_TYPE_BADGE[file.file_type] ?? FILE_TYPE_BADGE.other
@@ -83,12 +83,12 @@ export default async function FilesPage({
                 {file.downloadUrl ? (
                   <a
                     href={file.downloadUrl}
-                    className="text-sm font-medium text-blue-600 hover:text-blue-700"
+                    className="text-sm font-medium text-blue-400 hover:text-blue-300"
                   >
                     Download
                   </a>
                 ) : (
-                  <span className="text-sm text-zinc-400">Unavailable</span>
+                  <span className="text-sm text-zinc-500">Unavailable</span>
                 )}
               </li>
             ))}
@@ -96,7 +96,18 @@ export default async function FilesPage({
         )}
       </div>
 
-      <UploadForm sessionId={session.id} driverId={user.id} />
+      <p className="mb-6 rounded-lg bg-blue-500/10 px-3 py-2 text-sm text-blue-300 ring-1 ring-inset ring-blue-400/20">
+        Analysis (max/min RPM, braking zones, GPS speed comparisons) is coming soon.
+      </p>
+
+      <UploadForm
+        sessionId={session.id}
+        driverId={user.id}
+        allowedTypes={[
+          { value: "mychron", label: "MyChron data" },
+          { value: "other", label: "Other" },
+        ]}
+      />
     </div>
   );
 }

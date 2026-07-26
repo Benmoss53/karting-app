@@ -19,18 +19,18 @@ export default async function DashboardLayout({
 
   return (
     <div className="flex flex-1 flex-col">
-      <header className="border-b border-zinc-200 bg-white">
-        <div className="mx-auto flex w-full max-w-3xl items-center justify-between px-6 py-4">
-          <Link href="/dashboard" className="flex items-center gap-2 font-semibold text-zinc-900">
-            <span className="h-6 w-6 rounded-lg bg-gradient-to-br from-blue-600 to-red-500" />
+      <header className="border-b border-white/10 bg-zinc-950/70 backdrop-blur-sm">
+        <div className="mx-auto flex w-full max-w-5xl items-center justify-between px-6 py-4">
+          <Link href="/dashboard" className="flex items-center gap-2 font-semibold text-zinc-50">
+            <span className="h-6 w-6 rounded-lg bg-gradient-to-br from-blue-500 to-red-500 shadow-[0_0_16px_-4px_rgba(37,99,235,0.8)]" />
             Karting Log
           </Link>
-          <div className="flex items-center gap-4 text-sm text-zinc-600">
-            <span className="hidden sm:inline">{user.email}</span>
+          <div className="flex items-center gap-4 text-sm text-zinc-400">
+            <span className="hidden font-mono sm:inline">{user.email}</span>
             <form action={signOut}>
               <button
                 type="submit"
-                className="font-medium text-zinc-600 transition-colors hover:text-red-600"
+                className="font-medium text-zinc-400 transition-colors hover:text-red-400"
               >
                 Sign out
               </button>
@@ -38,7 +38,7 @@ export default async function DashboardLayout({
           </div>
         </div>
       </header>
-      <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-10">{children}</main>
+      <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-10">{children}</main>
     </div>
   );
 }

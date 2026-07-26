@@ -8,11 +8,15 @@ import { BUCKET_BY_TYPE } from "@/lib/storage";
 export default function UploadForm({
   sessionId,
   driverId,
+  allowedTypes,
+  label = "Upload a file",
 }: {
   sessionId: string;
   driverId: string;
+  allowedTypes: { value: string; label: string }[];
+  label?: string;
 }) {
-  const [fileType, setFileType] = useState("mychron");
+  const [fileType, setFileType] = useState(allowedTypes[0].value);
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
@@ -68,19 +72,19 @@ export default function UploadForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm"
+      className="rounded-xl border border-white/10 bg-zinc-900/60 p-5 shadow-lg shadow-black/20 backdrop-blur-sm"
     >
-      <h2 className="mb-4 text-sm font-medium text-zinc-500">Upload a file</h2>
+      <h2 className="mb-4 text-sm font-medium text-zinc-400">{label}</h2>
 
       {error && (
-        <p className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800">
+        <p className="mb-3 rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-300 ring-1 ring-inset ring-red-400/20">
           {error}
         </p>
       )}
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
         <div className="flex-1">
-          <label htmlFor="file" className="mb-1.5 block text-sm font-medium text-zinc-700">
+          <label htmlFor="file" className="mb-1.5 block text-sm font-medium text-zinc-300">
             File
           </label>
           <input
@@ -88,29 +92,33 @@ export default function UploadForm({
             name="file"
             type="file"
             required
-            className="w-full text-sm text-zinc-600 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-blue-700 hover:file:bg-blue-100"
+            className="w-full text-sm text-zinc-400 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-500/20 file:px-3 file:py-2 file:text-sm file:font-medium file:text-blue-300 hover:file:bg-blue-500/30"
           />
         </div>
-        <div>
-          <label htmlFor="fileType" className="mb-1.5 block text-sm font-medium text-zinc-700">
-            Type
-          </label>
-          <select
-            id="fileType"
-            name="fileType"
-            value={fileType}
-            onChange={(event) => setFileType(event.target.value)}
-            className="rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-          >
-            <option value="mychron">MyChron data</option>
-            <option value="video">SmartyCam video</option>
-            <option value="other">Other</option>
-          </select>
-        </div>
+        {allowedTypes.length > 1 && (
+          <div>
+            <label htmlFor="fileType" className="mb-1.5 block text-sm font-medium text-zinc-300">
+              Type
+            </label>
+            <select
+              id="fileType"
+              name="fileType"
+              value={fileType}
+              onChange={(event) => setFileType(event.target.value)}
+              className="rounded-lg border border-white/10 bg-zinc-950/60 px-3 py-2.5 text-sm text-zinc-100 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            >
+              {allowedTypes.map((type) => (
+                <option key={type.value} value={type.value}>
+                  {type.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
         <button
           type="submit"
           disabled={isUploading}
-          className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
+          className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-[0_0_20px_-6px_rgba(37,99,235,0.7)] transition-all duration-200 hover:scale-[1.02] hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-zinc-900 active:scale-[0.98] disabled:opacity-50 disabled:hover:scale-100"
         >
           {isUploading ? "Uploading..." : "Upload"}
         </button>
