@@ -3,6 +3,8 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { BUCKET_BY_TYPE } from "@/lib/storage";
+import { parseAimCsv, summarizeAimCsv } from "@/lib/aim-csv";
 
 function textOrNull(formData: FormData, key: string) {
   const value = formData.get(key);
@@ -95,4 +97,67 @@ export async function addCoachEntry(formData: FormData) {
 
   revalidatePath(`/dashboard/sessions/${sessionId}/testing-setups`);
   redirect(`/dashboard/sessions/${sessionId}/testing-setups`);
+}
+
+export async function analyzeTelemetryFile(formData: FormData) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  const sessionId = formData.get("sessionId") as string;
+  const fileId = formData.get("fileId") as string;
+  const errorRedirect = (message: string) =>
+    redirect(`/dashboard/sessions/${sessionId}/mychron?error=${encodeURIComponent(message)}`);
+
+  const { data: file, error: fileError } = await supabase
+    .from("telemetry_files")
+    .select("storage_path, file_type")
+    .eq("id", fileId)
+    .single();
+
+  if (fileError || !file) {
+    errorRedirect("File not found.");
+    return;
+  }
+
+  const bucket = BUCKET_BY_TYPE[file.file_type] ?? "telemetry";
+  const { data: blob, error: downloadError } = await supabase.storage
+    .from(bucket)
+    .download(file.storage_path);
+
+  if (downloadError || !blob) {
+    errorRedirect("Could not download this file.");
+    return;
+  }
+
+  const text = await blob.text();
+
+  let summary;
+  try {
+    summary = summarizeAimCsv(parseAimCsv(text));
+  } catch {
+    errorRedirect(
+      "Couldn't read this as an AiM CSV export. Make sure you exported via RaceStudio3 -> File -> Export -> CSV.",
+    );
+    return;
+  }
+
+  const { error: upsertError } = await supabase.from("telemetry_analysis").upsert(
+    { telemetry_file_id: fileId, summary },
+    { onConflict: "telemetry_file_id" },
+  );
+
+  if (upsertError) {
+    errorRedirect(upsertError.message);
+    return;
+  }
+
+  revalidatePath(`/dashboard/sessions/${sessionId}/mychron`);
+  redirect(`/dashboard/sessions/${sessionId}/mychron`);
 }
