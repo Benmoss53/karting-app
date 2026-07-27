@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@/lib/supabase/server";
 import { BUCKET_BY_TYPE } from "@/lib/storage";
 import { parseAimCsv, summarizeAimCsv } from "@/lib/aim-csv";
@@ -244,4 +245,64 @@ export async function deleteSession(formData: FormData) {
 
   revalidatePath("/dashboard");
   redirect("/dashboard");
+}
+
+export async function askAiCoach(sessionId: string, question: string) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  const [{ data: session }, { data: setupSheet }, { data: weather }, { data: entries }] =
+    await Promise.all([
+      supabase
+        .from("sessions")
+        .select("track_name, session_date, day_type, kart, motor")
+        .eq("id", sessionId)
+        .single(),
+      supabase.from("setup_sheets").select("*").eq("session_id", sessionId).maybeSingle(),
+      supabase.from("weather_conditions").select("*").eq("session_id", sessionId).maybeSingle(),
+      supabase
+        .from("coach_entries")
+        .select("change_made, reaction, created_at")
+        .eq("session_id", sessionId)
+        .order("created_at", { ascending: true }),
+    ]);
+
+  const context = [
+    session && `Session: ${session.track_name} on ${session.session_date}${session.day_type ? ` (${session.day_type})` : ""}${session.kart ? `, kart ${session.kart}` : ""}${session.motor ? `, motor ${session.motor}` : ""}`,
+    weather && `Weather: ${JSON.stringify(weather)}`,
+    setupSheet && `Setup sheet: ${JSON.stringify(setupSheet)}`,
+    entries && entries.length > 0
+      ? `Testing history (change made -> kart's reaction), oldest first:\n${entries
+          .map((entry, index) => `${index + 1}. Changed: ${entry.change_made} | Reaction: ${entry.reaction}`)
+          .join("\n")}`
+      : "No testing history logged for this session yet.",
+  ]
+    .filter(Boolean)
+    .join("\n\n");
+
+  const anthropic = new Anthropic();
+
+  const response = await anthropic.messages.create({
+    model: "claude-opus-5",
+    max_tokens: 1024,
+    output_config: { effort: "low" },
+    system:
+      "You are an AI karting coach helping a driver tune their kart setup. Use the session's setup sheet, weather conditions, and logged testing-setup entries (each a change made and the kart's reaction) below to answer the driver's question and recommend setup changes. Be concise and specific, and ground recommendations in the actual logged data rather than generic advice. If there isn't enough history to support a confident recommendation, say so plainly.\n\n" +
+      context,
+    messages: [{ role: "user", content: question }],
+  });
+
+  if (response.stop_reason === "refusal") {
+    return "I can't help with that question.";
+  }
+
+  const textBlock = response.content.find((block) => block.type === "text");
+  return textBlock?.type === "text" ? textBlock.text : "";
 }

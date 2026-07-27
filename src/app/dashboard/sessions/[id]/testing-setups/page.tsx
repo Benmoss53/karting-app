@@ -126,10 +126,10 @@ export default async function TestingSetupsPage({
       <div className="mt-8">
         <h2 className="mb-2 text-sm font-medium text-zinc-400">Speak To Your AI Coach</h2>
         <p className="mb-4 text-sm text-zinc-500">
-          This is a preview of the AI Coach experience. It isn&apos;t connected to a real AI
-          model yet — that comes once there&apos;s enough Testing Setups history to draw on.
+          Ask about setup changes for this session. It draws on the setup sheet, weather,
+          and testing history logged above.
         </p>
-        <AiCoachChat entryCount={entries?.length ?? 0} />
+        <AiCoachChat sessionId={session.id} entryCount={entries?.length ?? 0} />
       </div>
     </div>
   );

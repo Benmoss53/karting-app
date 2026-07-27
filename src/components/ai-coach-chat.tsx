@@ -1,29 +1,44 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { askAiCoach } from "@/app/dashboard/sessions/[id]/actions";
 
 type Message = { role: "user" | "assistant"; text: string };
 
-const PLACEHOLDER_REPLY =
-  "I'm not connected to a real AI model yet, so I can't give real recommendations right now. " +
-  "Once wired up, I'll read through your Testing Setups entries and weather history for this track " +
-  "and answer questions like this with actual suggestions.";
-
-export default function AiCoachChat({ entryCount }: { entryCount: number }) {
+export default function AiCoachChat({
+  sessionId,
+  entryCount,
+}: {
+  sessionId: string;
+  entryCount: number;
+}) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
+  const [pending, setPending] = useState(false);
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const question = input.trim();
-    if (!question) return;
+    if (!question || pending) return;
 
-    setMessages((prev) => [
-      ...prev,
-      { role: "user", text: question },
-      { role: "assistant", text: PLACEHOLDER_REPLY },
-    ]);
+    setMessages((prev) => [...prev, { role: "user", text: question }]);
     setInput("");
+    setPending(true);
+
+    try {
+      const answer = await askAiCoach(sessionId, question);
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", text: answer || "No response from the AI coach." },
+      ]);
+    } catch {
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", text: "Something went wrong asking the AI coach. Try again." },
+      ]);
+    } finally {
+      setPending(false);
+    }
   }
 
   return (
@@ -34,8 +49,8 @@ export default function AiCoachChat({ entryCount }: { entryCount: number }) {
             {entryCount > 0
               ? `You have ${entryCount} Testing Setups ${
                   entryCount === 1 ? "entry" : "entries"
-                } logged for this day. Ask a question below to see how this will work.`
-              : "No Testing Setups entries logged for this day yet. Ask a question below to see how this will work."}
+                } logged for this day. Ask a question below.`
+              : "No Testing Setups entries logged for this day yet. Ask a question below."}
           </p>
         ) : (
           messages.map((message, index) => (
@@ -51,6 +66,11 @@ export default function AiCoachChat({ entryCount }: { entryCount: number }) {
             </div>
           ))
         )}
+        {pending && (
+          <div className="self-start rounded-lg bg-white/5 px-3 py-2 text-sm text-zinc-500 ring-1 ring-inset ring-white/10">
+            Thinking…
+          </div>
+        )}
       </div>
 
       <form onSubmit={handleSubmit} className="flex gap-2">
@@ -59,13 +79,15 @@ export default function AiCoachChat({ entryCount }: { entryCount: number }) {
           value={input}
           onChange={(event) => setInput(event.target.value)}
           placeholder="e.g. Should I add more camber for a wet track?"
-          className="flex-1 rounded-lg border border-white/10 bg-zinc-950/60 px-3 py-2.5 text-sm text-zinc-100 shadow-sm transition-colors focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          disabled={pending}
+          className="flex-1 rounded-lg border border-white/10 bg-zinc-950/60 px-3 py-2.5 text-sm text-zinc-100 shadow-sm transition-colors focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-60"
         />
         <button
           type="submit"
-          className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-[0_0_20px_-6px_rgba(37,99,235,0.7)] transition-all duration-200 hover:scale-[1.03] hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-zinc-900 active:scale-[0.97]"
+          disabled={pending}
+          className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-[0_0_20px_-6px_rgba(37,99,235,0.7)] transition-all duration-200 hover:scale-[1.03] hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-zinc-900 active:scale-[0.97] disabled:opacity-60 disabled:hover:scale-100"
         >
-          Ask
+          {pending ? "Asking…" : "Ask"}
         </button>
       </form>
     </div>
