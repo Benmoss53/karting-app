@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@/lib/supabase/server";
+import type { AimCsvSummary } from "@/lib/aim-csv";
+import { getWeatherForLocation } from "@/lib/weather";
 
 const DAY_TYPE_VALUES = ["race_meeting", "test_day"];
 const SKY_CONDITIONS_VALUES = ["sunny", "overcast"];
@@ -77,6 +79,24 @@ export async function createSession(formData: FormData) {
   redirect(`/dashboard/sessions/${data.id}`);
 }
 
+export async function getWeatherSuggestion(trackName: string, sessionDate: string) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  if (!trackName.trim() || !sessionDate) {
+    return { error: "Enter a track name and date first." };
+  }
+
+  return getWeatherForLocation(trackName, sessionDate);
+}
+
 function compactRow(row: Record<string, unknown> | null | undefined) {
   if (!row) return null;
   const entries = Object.entries(row).filter(
@@ -104,7 +124,7 @@ export async function askAiCoach(question: string) {
 
   const sessionIds = (sessions ?? []).map((s) => s.id);
 
-  const [{ data: setupEntries }, { data: weatherRows }] = sessionIds.length
+  const [{ data: setupEntries }, { data: weatherRows }, { data: telemetryFiles }] = sessionIds.length
     ? await Promise.all([
         supabase
           .from("setup_sheets")
@@ -112,8 +132,13 @@ export async function askAiCoach(question: string) {
           .in("session_id", sessionIds)
           .order("created_at", { ascending: true }),
         supabase.from("weather_conditions").select("*").in("session_id", sessionIds),
+        supabase
+          .from("telemetry_files")
+          .select("id, session_id, file_name")
+          .in("session_id", sessionIds)
+          .in("file_type", ["mychron", "other"]),
       ])
-    : [{ data: [] }, { data: [] }];
+    : [{ data: [] }, { data: [] }, { data: [] }];
 
   const entriesBySession = new Map<string, Record<string, unknown>[]>();
   for (const row of setupEntries ?? []) {
@@ -123,9 +148,30 @@ export async function askAiCoach(question: string) {
   }
   const weatherBySession = new Map((weatherRows ?? []).map((row) => [row.session_id, row]));
 
+  const fileIds = (telemetryFiles ?? []).map((f) => f.id);
+  const { data: analyses } = fileIds.length
+    ? await supabase
+        .from("telemetry_analysis")
+        .select("telemetry_file_id, summary")
+        .in("telemetry_file_id", fileIds)
+    : { data: [] };
+  const summaryByFileId = new Map(
+    (analyses ?? []).map((a) => [a.telemetry_file_id as string, a.summary as AimCsvSummary]),
+  );
+
+  const telemetryBySession = new Map<string, { fileName: string; summary: AimCsvSummary }[]>();
+  for (const file of telemetryFiles ?? []) {
+    const summary = summaryByFileId.get(file.id);
+    if (!summary) continue;
+    const list = telemetryBySession.get(file.session_id) ?? [];
+    list.push({ fileName: file.file_name, summary });
+    telemetryBySession.set(file.session_id, list);
+  }
+
   const dayBlocks = (sessions ?? []).map((s) => {
     const entries = entriesBySession.get(s.id) ?? [];
     const weather = compactRow(weatherBySession.get(s.id));
+    const telemetry = telemetryBySession.get(s.id) ?? [];
 
     const lines = [
       `${s.session_date} — ${s.track_name}${s.day_type ? ` (${s.day_type})` : ""}${s.kart ? `, kart ${s.kart}` : ""}${s.motor ? `, motor ${s.motor}` : ""}`,
@@ -140,6 +186,20 @@ export async function askAiCoach(question: string) {
       if (setup) lines.push(`    Setup: ${JSON.stringify(setup)}`);
       if (computedChanges) lines.push(`    Changed from previous entry: ${computedChanges}`);
       lines.push(`    How it felt: ${feedback ?? "not logged yet"}`);
+    });
+
+    telemetry.forEach(({ fileName, summary }) => {
+      const highlights = [
+        summary.maxRpm != null ? `max RPM ${Math.round(summary.maxRpm)}` : null,
+        summary.maxSpeedKmh != null ? `max speed ${summary.maxSpeedKmh.toFixed(1)} km/h` : null,
+        summary.avgSpeedKmh != null ? `avg speed ${summary.avgSpeedKmh.toFixed(1)} km/h` : null,
+        summary.maxLateralG != null ? `max lateral G ${summary.maxLateralG.toFixed(2)}` : null,
+        summary.avgLambda != null ? `avg lambda ${summary.avgLambda.toFixed(2)}` : null,
+        summary.laps?.length ? `${summary.laps.length} laps` : null,
+      ]
+        .filter(Boolean)
+        .join(", ");
+      lines.push(`  Telemetry (${fileName}): ${highlights || "no stats available"}`);
     });
 
     return lines.join("\n");
@@ -157,7 +217,7 @@ export async function askAiCoach(question: string) {
     max_tokens: 1536,
     output_config: { effort: "low" },
     system:
-      "You are an experienced karting race engineer talking directly to your driver, like you're leaning on the kart together after a session. You have the driver's full history across every session they've logged. Each day can have several setup changes logged in sequence, and each change has the full spec at that point, an automatically computed summary of what changed from the previous change, and feedback on how the kart felt afterward — that feedback is what the next change was reacting to. Draw on patterns and lessons from every day when they're relevant — mention the specific date/track when you reference a past day. Ground recommendations in the actual logged data rather than generic advice. If there isn't enough history to support a confident recommendation, say so plainly.\n\n" +
+      "You are an experienced karting race engineer talking directly to your driver, like you're leaning on the kart together after a session. You have the driver's full history across every session they've logged. Each day can have several setup changes logged in sequence, and each change has the full spec at that point, an automatically computed summary of what changed from the previous change, and feedback on how the kart felt afterward — that feedback is what the next change was reacting to. Some days also have telemetry from an analyzed MyChron file: max RPM, max/avg speed, max lateral G, avg lambda, and lap count. Cross-reference the telemetry against the setup and feedback for that day when it's relevant — e.g. a lean lambda reading or a lower max RPM can explain a feel the driver described. Draw on patterns and lessons from every day when they're relevant — mention the specific date/track when you reference a past day. Ground recommendations in the actual logged data rather than generic advice. If there isn't enough history to support a confident recommendation, say so plainly.\n\n" +
       "Talk like a real person coaching another person, not a computer generating a report. Use plain, everyday words a driver would actually say out loud — 'loosen the rear a touch', not 'consider reducing rear grip coefficient'. Say what you'd say if you were standing next to them: direct, a little conversational, no corporate hedging ('it's important to note', 'as an AI', 'I would recommend considering'). Keep it short — 2-4 sentences for a normal question — and lead with the actual answer, not a restated version of their question. Write in plain sentences, not bullet points or headers, unless they specifically ask you to list out several distinct changes.\n\n" +
       context,
     messages: [{ role: "user", content: question }],
