@@ -94,12 +94,6 @@ export default async function SetupSheetPage({
             </p>
           )}
 
-          {setupSheet?.computed_changes && (
-            <p className="mb-4 rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-300 ring-1 ring-inset ring-red-400/20">
-              Changed from last time: {setupSheet.computed_changes}
-            </p>
-          )}
-
           <form action={upsertSetupSheet} className="flex flex-col gap-6">
             <input type="hidden" name="sessionId" value={session.id} />
 
@@ -164,7 +158,11 @@ export default async function SetupSheetPage({
 
           <div className={`mt-6 ${cardClass} ${!setupSheet ? "opacity-50" : ""}`}>
             <h2 className="mb-1 text-sm font-medium text-zinc-400">After the session</h2>
-            {setupSheet ? (
+            {!setupSheet ? (
+              <p className="mt-2 text-sm text-zinc-500">Submit the setup above first.</p>
+            ) : setupSheet.feedback ? (
+              <p className="mt-3 text-sm text-zinc-300">{setupSheet.feedback}</p>
+            ) : (
               <form action={saveSetupFeedback} className="mt-3 flex flex-col gap-3">
                 <input type="hidden" name="sessionId" value={session.id} />
                 <label htmlFor="feedback" className={labelClass}>
@@ -175,7 +173,6 @@ export default async function SetupSheetPage({
                   name="feedback"
                   rows={3}
                   placeholder="e.g. Gave more steer into the corner but felt loose on exit"
-                  defaultValue={setupSheet?.feedback ?? ""}
                   className={inputClass}
                 />
                 <button
@@ -185,13 +182,35 @@ export default async function SetupSheetPage({
                   Save feedback
                 </button>
               </form>
-            ) : (
-              <p className="mt-2 text-sm text-zinc-500">Submit the setup above first.</p>
             )}
           </div>
         </div>
 
         <aside className="lg:sticky lg:top-6 lg:self-start">
+          <h2 className="mb-3 text-sm font-medium text-zinc-400">This day</h2>
+          <div className="mb-4 rounded-xl border border-blue-400/30 bg-blue-500/5 p-4 shadow-lg shadow-black/20 backdrop-blur-sm">
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <span className="font-medium text-zinc-100">{session.track_name}</span>
+              <span className="font-mono text-xs text-zinc-500">{session.session_date}</span>
+            </div>
+            {setupSheet ? (
+              <>
+                {setupSheet.computed_changes ? (
+                  <p className="text-xs text-red-300">Changed: {setupSheet.computed_changes}</p>
+                ) : (
+                  <p className="text-xs text-zinc-500">No changes recorded</p>
+                )}
+                {setupSheet.feedback ? (
+                  <p className="mt-1.5 text-xs text-zinc-300">Felt: {setupSheet.feedback}</p>
+                ) : (
+                  <p className="mt-1.5 text-xs text-zinc-500">No feedback yet</p>
+                )}
+              </>
+            ) : (
+              <p className="text-xs text-zinc-500">Not submitted yet</p>
+            )}
+          </div>
+
           <h2 className="mb-3 text-sm font-medium text-zinc-400">Previous days</h2>
           {priorEntries.length === 0 ? (
             <p className="text-sm text-zinc-500">No previous days logged yet.</p>
