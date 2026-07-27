@@ -57,6 +57,14 @@ export default async function SessionHubPage({
 
   const menuItems = [
     {
+      href: `/dashboard/sessions/${id}/ai-coach`,
+      title: "Speak To Your AI Coach",
+      description: "Ask for setup recommendations",
+      status: coachCount ? `${coachCount} entr${coachCount === 1 ? "y" : "ies"} to draw on` : "No history yet",
+      accent: "from-blue-500 to-red-500",
+      glow: "hover:shadow-blue-500/10 hover:border-blue-400/40",
+    },
+    {
       href: `/dashboard/sessions/${id}/testing-setups`,
       title: "Testing Setups",
       description: "Log a change you made and how the kart reacted",

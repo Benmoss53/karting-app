@@ -2,7 +2,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { addCoachEntry } from "../actions";
-import AiCoachChat from "@/components/ai-coach-chat";
 
 const inputClass =
   "w-full rounded-lg border border-white/10 bg-zinc-950/60 px-3 py-2.5 text-sm text-zinc-100 shadow-sm transition-colors focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500";
@@ -121,15 +120,6 @@ export default async function TestingSetupsPage({
             ))}
           </ul>
         )}
-      </div>
-
-      <div className="mt-8">
-        <h2 className="mb-2 text-sm font-medium text-zinc-400">Speak To Your AI Coach</h2>
-        <p className="mb-4 text-sm text-zinc-500">
-          Ask about setup changes for this session. It draws on the setup sheet, weather,
-          and testing history logged above.
-        </p>
-        <AiCoachChat sessionId={session.id} entryCount={entries?.length ?? 0} />
       </div>
     </div>
   );
