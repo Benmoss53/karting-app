@@ -26,7 +26,7 @@ export default async function SessionHubPage({
     notFound();
   }
 
-  const [{ data: weather }, { count: mychronCount }, { count: videoCount }, { data: setupSheet }] =
+  const [{ data: weather }, { count: mychronCount }, { count: videoCount }, { data: setupEntries }] =
     await Promise.all([
       supabase
         .from("weather_conditions")
@@ -43,15 +43,21 @@ export default async function SessionHubPage({
         .select("id", { count: "exact", head: true })
         .eq("session_id", id)
         .eq("file_type", "video"),
-      supabase.from("setup_sheets").select("id, feedback").eq("session_id", id).maybeSingle(),
+      supabase.from("setup_sheets").select("id, feedback").eq("session_id", id),
     ]);
+
+  const entryCount = setupEntries?.length ?? 0;
+  const pendingFeedback = (setupEntries ?? []).some((entry) => !entry.feedback);
 
   const menuItems = [
     {
       href: `/dashboard/sessions/${id}/setup`,
       title: "Setup Sheet",
       description: "Track, caster, camber, toe, crash bars — plus what changed and how it felt",
-      status: setupSheet ? (setupSheet.feedback ? "Saved · feedback logged" : "Saved") : "Not saved",
+      status:
+        entryCount === 0
+          ? "Not started"
+          : `${entryCount} change${entryCount === 1 ? "" : "s"}${pendingFeedback ? " · feedback pending" : ""}`,
       accent: "from-blue-500 to-blue-400",
       glow: "hover:shadow-blue-500/10 hover:border-blue-400/40",
     },

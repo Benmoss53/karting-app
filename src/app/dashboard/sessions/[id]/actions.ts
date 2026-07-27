@@ -13,7 +13,33 @@ function textOrNull(formData: FormData, key: string) {
   return value.trim();
 }
 
-export async function upsertSetupSheet(formData: FormData) {
+// The single most recent setup entry across every session the driver has
+// ever logged — this is the running "base" a new entry changes from,
+// regardless of which day it was logged on.
+async function getLatestEntry(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+) {
+  const { data: driverSessions } = await supabase
+    .from("sessions")
+    .select("id")
+    .eq("driver_id", userId);
+
+  const driverSessionIds = (driverSessions ?? []).map((s) => s.id);
+  if (driverSessionIds.length === 0) return null;
+
+  const { data } = await supabase
+    .from("setup_sheets")
+    .select("*")
+    .in("session_id", driverSessionIds)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  return data;
+}
+
+export async function submitSetupEntry(formData: FormData) {
   const supabase = await createClient();
 
   const {
@@ -25,54 +51,34 @@ export async function upsertSetupSheet(formData: FormData) {
   }
 
   const sessionId = formData.get("sessionId") as string;
+  const errorRedirect = (message: string) =>
+    redirect(`/dashboard/sessions/${sessionId}/setup?error=${encodeURIComponent(message)}`);
+
+  const latestEntry = await getLatestEntry(supabase, user!.id);
+
+  // Can't start a new change until the previous one's feedback is logged —
+  // that feedback is what the next change is actually reacting to.
+  if (latestEntry && !latestEntry.feedback) {
+    errorRedirect("Log what the last change did before making another one.");
+    return;
+  }
 
   const newValues: Record<string, string | null> = {};
   for (const { name, key } of SETUP_SHEET_FIELDS) {
     newValues[key] = textOrNull(formData, name);
   }
 
-  // Auto-detect what changed by diffing against the most recent previous
-  // day's setup sheet, rather than asking the driver to write it down.
-  let computedChanges: string | null = null;
-  const { data: session } = await supabase
-    .from("sessions")
-    .select("session_date")
-    .eq("id", sessionId)
-    .single();
+  const computedChanges = diffSetupSheets(latestEntry, newValues);
 
-  if (session) {
-    const { data: previousSession } = await supabase
-      .from("sessions")
-      .select("id")
-      .eq("driver_id", user!.id)
-      .lt("session_date", session.session_date)
-      .order("session_date", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    if (previousSession) {
-      const { data: previousSheet } = await supabase
-        .from("setup_sheets")
-        .select("*")
-        .eq("session_id", previousSession.id)
-        .maybeSingle();
-      computedChanges = diffSetupSheets(previousSheet, newValues);
-    }
-  }
-
-  const { error } = await supabase.from("setup_sheets").upsert(
-    {
-      session_id: sessionId,
-      ...newValues,
-      computed_changes: computedChanges,
-    },
-    { onConflict: "session_id" },
-  );
+  const { error } = await supabase.from("setup_sheets").insert({
+    session_id: sessionId,
+    ...newValues,
+    computed_changes: computedChanges,
+  });
 
   if (error) {
-    redirect(
-      `/dashboard/sessions/${sessionId}/setup?error=${encodeURIComponent(error.message)}`,
-    );
+    errorRedirect(error.message);
+    return;
   }
 
   revalidatePath(`/dashboard/sessions/${sessionId}`);
@@ -93,12 +99,13 @@ export async function saveSetupFeedback(formData: FormData) {
   }
 
   const sessionId = formData.get("sessionId") as string;
+  const entryId = formData.get("entryId") as string;
   const feedback = textOrNull(formData, "feedback");
 
   const { error } = await supabase
     .from("setup_sheets")
     .update({ feedback })
-    .eq("session_id", sessionId);
+    .eq("id", entryId);
 
   if (error) {
     redirect(

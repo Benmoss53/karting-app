@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import AiCoachChat from "@/components/ai-coach-chat";
+import SetupEntryLog from "@/components/setup-entry-log";
 import { SETUP_SHEET_FIELDS } from "@/lib/setup-sheet";
 
 const DAY_TYPE_LABEL: Record<string, string> = {
@@ -8,9 +9,11 @@ const DAY_TYPE_LABEL: Record<string, string> = {
   test_day: "Test day",
 };
 
+type Entry = Record<string, unknown> & { id: string; session_id: string };
+
 export default async function DashboardPage() {
   const supabase = await createClient();
-  const [{ data: sessions }, { count: feedbackCount }, { data: setupSheets }] = await Promise.all([
+  const [{ data: sessions }, { count: feedbackCount }, { data: setupEntries }] = await Promise.all([
     supabase
       .from("sessions")
       .select("id, track_name, session_date, day_type")
@@ -19,12 +22,15 @@ export default async function DashboardPage() {
       .from("setup_sheets")
       .select("id", { count: "exact", head: true })
       .not("feedback", "is", null),
-    supabase.from("setup_sheets").select("*"),
+    supabase.from("setup_sheets").select("*").order("created_at", { ascending: true }),
   ]);
 
-  const setupBySession = new Map(
-    (setupSheets ?? []).map((row) => [row.session_id as string, row as Record<string, unknown>]),
-  );
+  const entriesBySession = new Map<string, Entry[]>();
+  for (const row of (setupEntries ?? []) as Entry[]) {
+    const list = entriesBySession.get(row.session_id) ?? [];
+    list.push(row);
+    entriesBySession.set(row.session_id, list);
+  }
 
   // Number sessions chronologically (Session 1 = earliest), independent of
   // the newest-first display order below.
@@ -67,8 +73,9 @@ export default async function DashboardPage() {
       ) : (
         <ul className="flex flex-col gap-3">
           {sessions.map((session) => {
-            const sheet = setupBySession.get(session.id);
-            const filledFields = SETUP_SHEET_FIELDS.filter(({ key }) => sheet?.[key]);
+            const entries = entriesBySession.get(session.id) ?? [];
+            const latestEntry = entries[entries.length - 1];
+            const filledFields = SETUP_SHEET_FIELDS.filter(({ key }) => latestEntry?.[key]);
 
             return (
               <li key={session.id}>
@@ -95,28 +102,21 @@ export default async function DashboardPage() {
                   </summary>
 
                   <div className="border-t border-white/10 px-5 py-4">
-                    {sheet ? (
+                    {latestEntry ? (
                       <>
                         {filledFields.length > 0 && (
-                          <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm sm:grid-cols-3">
+                          <dl className="mb-4 grid grid-cols-2 gap-x-4 gap-y-3 text-sm sm:grid-cols-3">
                             {filledFields.map(({ label, key }) => (
                               <div key={key}>
                                 <dt className="text-xs text-zinc-500">{label}</dt>
-                                <dd className="font-mono text-zinc-200">{sheet[key] as string}</dd>
+                                <dd className="font-mono text-zinc-200">
+                                  {latestEntry[key] as string}
+                                </dd>
                               </div>
                             ))}
                           </dl>
                         )}
-                        {sheet.computed_changes ? (
-                          <p className="mt-4 text-sm text-red-300">
-                            Changed: {sheet.computed_changes as string}
-                          </p>
-                        ) : null}
-                        {sheet.feedback ? (
-                          <p className="mt-2 text-sm text-zinc-300">
-                            Felt: {sheet.feedback as string}
-                          </p>
-                        ) : null}
+                        <SetupEntryLog entries={entries} compact />
                       </>
                     ) : (
                       <p className="text-sm text-zinc-500">No setup sheet saved for this day yet.</p>
