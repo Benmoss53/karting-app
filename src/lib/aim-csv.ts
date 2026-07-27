@@ -94,6 +94,19 @@ export function parseAimCsv(text: string): AimCsvData {
   return { meta, beaconMarkers, segmentTimes, columns, units, rows };
 }
 
+export type BrakingZone = {
+  startDistanceM: number;
+  endDistanceM: number;
+  entrySpeedKmh: number;
+  exitSpeedKmh: number;
+  durationSeconds: number;
+};
+
+export type TracePoint = {
+  distanceM: number;
+  speedKmh: number;
+};
+
 export type LapSummary = {
   lap: number;
   lapTime: string | null;
@@ -102,6 +115,8 @@ export type LapSummary = {
   maxRpm: number | null;
   minRpm: number | null;
   maxSpeedKmh: number | null;
+  brakingZones: BrakingZone[];
+  speedTrace: TracePoint[];
 };
 
 export type AimCsvSummary = {
@@ -134,12 +149,101 @@ function columnStats(idx: number, rowSubset: number[][]) {
   return { max, min, avg: sum / rowSubset.length };
 }
 
+// Deceleration steeper than this (km/h lost per second) counts as braking,
+// sustained for at least MIN_ZONE_SECONDS to filter out GPS noise / lift-off coasting.
+const DECEL_THRESHOLD_KMH_PER_S = 8;
+const MIN_ZONE_SECONDS = 0.3;
+const MAX_TRACE_POINTS = 250;
+
+function smooth(values: number[], window = 5): number[] {
+  const half = Math.floor(window / 2);
+  return values.map((_, i) => {
+    const lo = Math.max(0, i - half);
+    const hi = Math.min(values.length - 1, i + half);
+    let sum = 0;
+    let count = 0;
+    for (let j = lo; j <= hi; j++) {
+      sum += values[j];
+      count++;
+    }
+    return sum / count;
+  });
+}
+
+function detectBrakingZones(
+  lapRows: number[][],
+  speedIdx: number,
+  distIdx: number,
+  sampleIntervalS: number,
+): BrakingZone[] {
+  if (speedIdx === -1 || distIdx === -1 || lapRows.length < 5 || sampleIntervalS <= 0) {
+    return [];
+  }
+
+  const baseDistance = lapRows[0][distIdx];
+  const speeds = smooth(lapRows.map((row) => row[speedIdx]));
+  const minZoneSamples = Math.max(2, Math.round(MIN_ZONE_SECONDS / sampleIntervalS));
+
+  const zones: BrakingZone[] = [];
+  let zoneStart: number | null = null;
+
+  const closeZone = (startIdx: number, endIdx: number) => {
+    if (endIdx - startIdx < minZoneSamples) return;
+    zones.push({
+      startDistanceM: lapRows[startIdx][distIdx] - baseDistance,
+      endDistanceM: lapRows[endIdx][distIdx] - baseDistance,
+      entrySpeedKmh: speeds[startIdx],
+      exitSpeedKmh: Math.min(...speeds.slice(startIdx, endIdx + 1)),
+      durationSeconds: (endIdx - startIdx) * sampleIntervalS,
+    });
+  };
+
+  for (let i = 1; i < speeds.length; i++) {
+    const decelRate = (speeds[i] - speeds[i - 1]) / sampleIntervalS;
+    const isBraking = decelRate < -DECEL_THRESHOLD_KMH_PER_S;
+    if (isBraking && zoneStart === null) {
+      zoneStart = i - 1;
+    } else if (!isBraking && zoneStart !== null) {
+      closeZone(zoneStart, i - 1);
+      zoneStart = null;
+    }
+  }
+  if (zoneStart !== null) {
+    closeZone(zoneStart, speeds.length - 1);
+  }
+
+  return zones;
+}
+
+function buildSpeedTrace(lapRows: number[][], speedIdx: number, distIdx: number): TracePoint[] {
+  if (speedIdx === -1 || distIdx === -1 || lapRows.length === 0) return [];
+
+  const baseDistance = lapRows[0][distIdx];
+  const step = Math.max(1, Math.ceil(lapRows.length / MAX_TRACE_POINTS));
+
+  const trace: TracePoint[] = [];
+  for (let i = 0; i < lapRows.length; i += step) {
+    trace.push({
+      distanceM: lapRows[i][distIdx] - baseDistance,
+      speedKmh: lapRows[i][speedIdx],
+    });
+  }
+  const last = lapRows[lapRows.length - 1];
+  if (trace[trace.length - 1]?.distanceM !== last[distIdx] - baseDistance) {
+    trace.push({ distanceM: last[distIdx] - baseDistance, speedKmh: last[speedIdx] });
+  }
+  return trace;
+}
+
 export function summarizeAimCsv(parsed: AimCsvData): AimCsvSummary {
   const { meta, beaconMarkers, segmentTimes, columns, rows } = parsed;
 
   const timeIdx = 0;
   const rpmIdx = columns.indexOf("RPM");
   const speedIdx = columns.indexOf("GPS Speed");
+  const distIdx = columns.indexOf("Distance on GPS Speed");
+  const sampleRateHz = meta["Sample Rate"] ? Number(meta["Sample Rate"]) : null;
+  const sampleIntervalS = sampleRateHz ? 1 / sampleRateHz : 0.05;
 
   const overallRpm = columnStats(rpmIdx, rows);
   const overallSpeed = columnStats(speedIdx, rows);
@@ -159,6 +263,8 @@ export function summarizeAimCsv(parsed: AimCsvData): AimCsvSummary {
       maxRpm: rpmStats.max,
       minRpm: rpmStats.min,
       maxSpeedKmh: speedStats.max,
+      brakingZones: detectBrakingZones(lapRows, speedIdx, distIdx, sampleIntervalS),
+      speedTrace: buildSpeedTrace(lapRows, speedIdx, distIdx),
     });
     lapStart = lapEnd;
   }
@@ -167,7 +273,7 @@ export function summarizeAimCsv(parsed: AimCsvData): AimCsvSummary {
     session: meta["Session"] || null,
     racer: meta["Racer"] || null,
     date: meta["Date"] || null,
-    sampleRateHz: meta["Sample Rate"] ? Number(meta["Sample Rate"]) : null,
+    sampleRateHz,
     durationSeconds: meta["Duration"] ? Number(meta["Duration"]) : null,
     sampleCount: rows.length,
     maxRpm: overallRpm.max,
