@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { BUCKET_BY_TYPE } from "@/lib/storage";
 import UploadForm from "@/components/upload-form";
+import DeleteFileButton from "@/components/delete-file-button";
 import SpeedDistanceChart from "@/components/speed-distance-chart";
 import { analyzeTelemetryFile } from "../actions";
 import type { AimCsvSummary } from "@/lib/aim-csv";
@@ -110,16 +111,23 @@ export default async function MyChronDataPage({
                       {file.file_type}
                     </span>
                   </div>
-                  {file.downloadUrl ? (
-                    <a
-                      href={file.downloadUrl}
-                      className="text-sm font-medium text-blue-400 hover:text-blue-300"
-                    >
-                      Download
-                    </a>
-                  ) : (
-                    <span className="text-sm text-zinc-500">Unavailable</span>
-                  )}
+                  <div className="flex items-center gap-4">
+                    {file.downloadUrl ? (
+                      <a
+                        href={file.downloadUrl}
+                        className="text-sm font-medium text-blue-400 hover:text-blue-300"
+                      >
+                        Download
+                      </a>
+                    ) : (
+                      <span className="text-sm text-zinc-500">Unavailable</span>
+                    )}
+                    <DeleteFileButton
+                      sessionId={id}
+                      fileId={file.id}
+                      fileName={file.file_name}
+                    />
+                  </div>
                 </div>
 
                 {file.analysis ? (

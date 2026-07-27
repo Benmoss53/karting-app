@@ -162,6 +162,47 @@ export async function analyzeTelemetryFile(formData: FormData) {
   redirect(`/dashboard/sessions/${sessionId}/mychron`);
 }
 
+export async function deleteTelemetryFile(formData: FormData) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  const sessionId = formData.get("sessionId") as string;
+  const fileId = formData.get("fileId") as string;
+  const errorRedirect = (message: string) =>
+    redirect(`/dashboard/sessions/${sessionId}/mychron?error=${encodeURIComponent(message)}`);
+
+  const { data: file, error: fileError } = await supabase
+    .from("telemetry_files")
+    .select("storage_path, file_type")
+    .eq("id", fileId)
+    .single();
+
+  if (fileError || !file) {
+    errorRedirect("File not found.");
+    return;
+  }
+
+  const bucket = BUCKET_BY_TYPE[file.file_type] ?? "telemetry";
+  await supabase.storage.from(bucket).remove([file.storage_path]);
+
+  const { error } = await supabase.from("telemetry_files").delete().eq("id", fileId);
+
+  if (error) {
+    errorRedirect(error.message);
+    return;
+  }
+
+  revalidatePath(`/dashboard/sessions/${sessionId}/mychron`);
+  redirect(`/dashboard/sessions/${sessionId}/mychron`);
+}
+
 export async function deleteSession(formData: FormData) {
   const supabase = await createClient();
 
