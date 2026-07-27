@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { addCoachEntry } from "../actions";
+import AiCoachChat from "@/components/ai-coach-chat";
 
 const inputClass =
   "w-full rounded-lg border border-white/10 bg-zinc-950/60 px-3 py-2.5 text-sm text-zinc-100 shadow-sm transition-colors focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500";
@@ -120,6 +121,15 @@ export default async function TestingSetupsPage({
             ))}
           </ul>
         )}
+      </div>
+
+      <div className="mt-8">
+        <h2 className="mb-2 text-sm font-medium text-zinc-400">Speak To Your AI Coach</h2>
+        <p className="mb-4 text-sm text-zinc-500">
+          This is a preview of the AI Coach experience. It isn&apos;t connected to a real AI
+          model yet — that comes once there&apos;s enough Testing Setups history to draw on.
+        </p>
+        <AiCoachChat entryCount={entries?.length ?? 0} />
       </div>
     </div>
   );
