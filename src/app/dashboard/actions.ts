@@ -104,44 +104,34 @@ export async function askAiCoach(question: string) {
 
   const sessionIds = (sessions ?? []).map((s) => s.id);
 
-  const [{ data: setupSheets }, { data: weatherRows }, { data: coachEntries }] = sessionIds.length
+  const [{ data: setupSheets }, { data: weatherRows }] = sessionIds.length
     ? await Promise.all([
         supabase.from("setup_sheets").select("*").in("session_id", sessionIds),
         supabase.from("weather_conditions").select("*").in("session_id", sessionIds),
-        supabase
-          .from("coach_entries")
-          .select("session_id, change_made, reaction, created_at")
-          .in("session_id", sessionIds)
-          .order("created_at", { ascending: true }),
       ])
-    : [{ data: [] }, { data: [] }, { data: [] }];
+    : [{ data: [] }, { data: [] }];
 
-  const setupBySession = new Map((setupSheets ?? []).map((row) => [row.session_id, row]));
+  const setupBySession = new Map(
+    (setupSheets ?? []).map((row) => [row.session_id as string, row as Record<string, unknown>]),
+  );
   const weatherBySession = new Map((weatherRows ?? []).map((row) => [row.session_id, row]));
-  const entriesBySession = new Map<string, { change_made: string; reaction: string }[]>();
-  for (const entry of coachEntries ?? []) {
-    const list = entriesBySession.get(entry.session_id) ?? [];
-    list.push({ change_made: entry.change_made, reaction: entry.reaction });
-    entriesBySession.set(entry.session_id, list);
-  }
 
   const dayBlocks = (sessions ?? []).map((s) => {
-    const setup = compactRow(setupBySession.get(s.id));
+    const rawSetup = setupBySession.get(s.id);
+    const computedChanges = rawSetup?.computed_changes as string | null | undefined;
+    const feedback = rawSetup?.feedback as string | null | undefined;
+    const setup = compactRow(
+      rawSetup ? { ...rawSetup, computed_changes: null, feedback: null } : rawSetup,
+    );
     const weather = compactRow(weatherBySession.get(s.id));
-    const dayEntries = entriesBySession.get(s.id) ?? [];
 
     const lines = [
       `${s.session_date} — ${s.track_name}${s.day_type ? ` (${s.day_type})` : ""}${s.kart ? `, kart ${s.kart}` : ""}${s.motor ? `, motor ${s.motor}` : ""}`,
     ];
     if (weather) lines.push(`  Weather: ${JSON.stringify(weather)}`);
     if (setup) lines.push(`  Setup sheet: ${JSON.stringify(setup)}`);
-    if (dayEntries.length > 0) {
-      lines.push(
-        `  Testing history: ${dayEntries
-          .map((entry) => `[Changed: ${entry.change_made} | Reaction: ${entry.reaction}]`)
-          .join(" ")}`,
-      );
-    }
+    if (computedChanges) lines.push(`  Changed from previous session: ${computedChanges}`);
+    if (feedback) lines.push(`  How it felt: ${feedback}`);
     return lines.join("\n");
   });
 
@@ -157,7 +147,7 @@ export async function askAiCoach(question: string) {
     max_tokens: 1536,
     output_config: { effort: "low" },
     system:
-      "You are an experienced karting race engineer talking directly to your driver, like you're leaning on the kart together after a session. You have the driver's full history across every session they've logged: setup sheets, weather conditions, and testing-setup entries (each a change made and the kart's reaction). Draw on patterns and lessons from every day when they're relevant — mention the specific date/track when you reference a past day. Ground recommendations in the actual logged data rather than generic advice. If there isn't enough history to support a confident recommendation, say so plainly.\n\n" +
+      "You are an experienced karting race engineer talking directly to your driver, like you're leaning on the kart together after a session. You have the driver's full history across every session they've logged: each day's setup sheet (the full spec), weather conditions, an automatically computed summary of what changed from the previous session's sheet, and feedback on how the kart felt afterward. Draw on patterns and lessons from every day when they're relevant — mention the specific date/track when you reference a past day. Ground recommendations in the actual logged data rather than generic advice. If there isn't enough history to support a confident recommendation, say so plainly.\n\n" +
       "Talk like a real person coaching another person, not a computer generating a report. Use plain, everyday words a driver would actually say out loud — 'loosen the rear a touch', not 'consider reducing rear grip coefficient'. Say what you'd say if you were standing next to them: direct, a little conversational, no corporate hedging ('it's important to note', 'as an AI', 'I would recommend considering'). Keep it short — 2-4 sentences for a normal question — and lead with the actual answer, not a restated version of their question. Write in plain sentences, not bullet points or headers, unless they specifically ask you to list out several distinct changes.\n\n" +
       context,
     messages: [{ role: "user", content: question }],

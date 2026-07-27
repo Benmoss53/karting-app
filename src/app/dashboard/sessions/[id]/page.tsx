@@ -26,49 +26,32 @@ export default async function SessionHubPage({
     notFound();
   }
 
-  const [
-    { data: weather },
-    { count: mychronCount },
-    { count: videoCount },
-    { data: setupSheet },
-    { count: coachCount },
-  ] = await Promise.all([
-    supabase
-      .from("weather_conditions")
-      .select("temperature, windy, track_temp, sky_conditions")
-      .eq("session_id", id)
-      .maybeSingle(),
-    supabase
-      .from("telemetry_files")
-      .select("id", { count: "exact", head: true })
-      .eq("session_id", id)
-      .in("file_type", ["mychron", "other"]),
-    supabase
-      .from("telemetry_files")
-      .select("id", { count: "exact", head: true })
-      .eq("session_id", id)
-      .eq("file_type", "video"),
-    supabase.from("setup_sheets").select("id").eq("session_id", id).maybeSingle(),
-    supabase
-      .from("coach_entries")
-      .select("id", { count: "exact", head: true })
-      .eq("session_id", id),
-  ]);
+  const [{ data: weather }, { count: mychronCount }, { count: videoCount }, { data: setupSheet }] =
+    await Promise.all([
+      supabase
+        .from("weather_conditions")
+        .select("temperature, windy, track_temp, sky_conditions")
+        .eq("session_id", id)
+        .maybeSingle(),
+      supabase
+        .from("telemetry_files")
+        .select("id", { count: "exact", head: true })
+        .eq("session_id", id)
+        .in("file_type", ["mychron", "other"]),
+      supabase
+        .from("telemetry_files")
+        .select("id", { count: "exact", head: true })
+        .eq("session_id", id)
+        .eq("file_type", "video"),
+      supabase.from("setup_sheets").select("id, feedback").eq("session_id", id).maybeSingle(),
+    ]);
 
   const menuItems = [
     {
-      href: `/dashboard/sessions/${id}/testing-setups`,
-      title: "Testing Setups",
-      description: "Log a change you made and how the kart reacted",
-      status: coachCount ? `${coachCount} entr${coachCount === 1 ? "y" : "ies"}` : "No entries yet",
-      accent: "from-red-500 to-red-400",
-      glow: "hover:shadow-red-500/10 hover:border-red-400/40",
-    },
-    {
       href: `/dashboard/sessions/${id}/setup`,
-      title: "Saved Setup Sheet",
-      description: "Track, caster, camber, toe, crash bars...",
-      status: setupSheet ? "Saved" : "Not saved",
+      title: "Setup Sheet",
+      description: "Track, caster, camber, toe, crash bars — plus what changed and how it felt",
+      status: setupSheet ? (setupSheet.feedback ? "Saved · feedback logged" : "Saved") : "Not saved",
       accent: "from-blue-500 to-blue-400",
       glow: "hover:shadow-blue-500/10 hover:border-blue-400/40",
     },

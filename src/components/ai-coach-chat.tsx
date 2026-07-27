@@ -41,10 +41,10 @@ export default function AiCoachChat({ entryCount }: { entryCount: number }) {
         {messages.length === 0 ? (
           <p className="text-base text-zinc-400">
             {entryCount > 0
-              ? `You have ${entryCount} Testing Setups ${
-                  entryCount === 1 ? "entry" : "entries"
-                } logged across every day. Ask a question below.`
-              : "No Testing Setups entries logged yet. Ask a question below."}
+              ? `You have feedback logged for ${entryCount} ${
+                  entryCount === 1 ? "day" : "days"
+                }. Ask a question below.`
+              : "No setup feedback logged yet. Ask a question below."}
           </p>
         ) : (
           messages.map((message, index) => (

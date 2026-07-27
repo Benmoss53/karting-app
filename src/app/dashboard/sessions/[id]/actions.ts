@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { BUCKET_BY_TYPE } from "@/lib/storage";
 import { parseAimCsv, summarizeAimCsv } from "@/lib/aim-csv";
+import { SETUP_SHEET_FIELDS, diffSetupSheets } from "@/lib/setup-sheet";
 
 function textOrNull(formData: FormData, key: string) {
   const value = formData.get(key);
@@ -25,27 +26,45 @@ export async function upsertSetupSheet(formData: FormData) {
 
   const sessionId = formData.get("sessionId") as string;
 
+  const newValues: Record<string, string | null> = {};
+  for (const { name, key } of SETUP_SHEET_FIELDS) {
+    newValues[key] = textOrNull(formData, name);
+  }
+
+  // Auto-detect what changed by diffing against the most recent previous
+  // day's setup sheet, rather than asking the driver to write it down.
+  let computedChanges: string | null = null;
+  const { data: session } = await supabase
+    .from("sessions")
+    .select("session_date")
+    .eq("id", sessionId)
+    .single();
+
+  if (session) {
+    const { data: previousSession } = await supabase
+      .from("sessions")
+      .select("id")
+      .eq("driver_id", user!.id)
+      .lt("session_date", session.session_date)
+      .order("session_date", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (previousSession) {
+      const { data: previousSheet } = await supabase
+        .from("setup_sheets")
+        .select("*")
+        .eq("session_id", previousSession.id)
+        .maybeSingle();
+      computedChanges = diffSetupSheets(previousSheet, newValues);
+    }
+  }
+
   const { error } = await supabase.from("setup_sheets").upsert(
     {
       session_id: sessionId,
-      front_upper_crash_bar: textOrNull(formData, "frontUpperCrashBar"),
-      front_lower_crash_bar: textOrNull(formData, "frontLowerCrashBar"),
-      torsion_bar: textOrNull(formData, "torsionBar"),
-      camber: textOrNull(formData, "camber"),
-      caster: textOrNull(formData, "caster"),
-      toe: textOrNull(formData, "toe"),
-      front_track: textOrNull(formData, "frontTrack"),
-      front_wheels: textOrNull(formData, "frontWheels"),
-      ackerman: textOrNull(formData, "ackerman"),
-      front_ride_height: textOrNull(formData, "frontRideHeight"),
-      sidepods: textOrNull(formData, "sidepods"),
-      third_bearing: textOrNull(formData, "thirdBearing"),
-      axle: textOrNull(formData, "axle"),
-      rear_ride_height: textOrNull(formData, "rearRideHeight"),
-      rear_bar: textOrNull(formData, "rearBar"),
-      rear_wheels: textOrNull(formData, "rearWheels"),
-      seat_position_a: textOrNull(formData, "seatPositionA"),
-      seat_position_b: textOrNull(formData, "seatPositionB"),
+      ...newValues,
+      computed_changes: computedChanges,
     },
     { onConflict: "session_id" },
   );
@@ -57,10 +76,12 @@ export async function upsertSetupSheet(formData: FormData) {
   }
 
   revalidatePath(`/dashboard/sessions/${sessionId}`);
-  redirect(`/dashboard/sessions/${sessionId}`);
+  revalidatePath(`/dashboard/sessions/${sessionId}/setup`);
+  revalidatePath("/dashboard");
+  redirect(`/dashboard/sessions/${sessionId}/setup`);
 }
 
-export async function addCoachEntry(formData: FormData) {
+export async function saveSetupFeedback(formData: FormData) {
   const supabase = await createClient();
 
   const {
@@ -72,31 +93,23 @@ export async function addCoachEntry(formData: FormData) {
   }
 
   const sessionId = formData.get("sessionId") as string;
-  const changeMade = textOrNull(formData, "changeMade");
-  const reaction = textOrNull(formData, "reaction");
+  const feedback = textOrNull(formData, "feedback");
 
-  if (!changeMade || !reaction) {
-    redirect(
-      `/dashboard/sessions/${sessionId}/testing-setups?error=${encodeURIComponent(
-        "Fill in both what you changed and what happened.",
-      )}`,
-    );
-  }
-
-  const { error } = await supabase.from("coach_entries").insert({
-    session_id: sessionId,
-    change_made: changeMade,
-    reaction,
-  });
+  const { error } = await supabase
+    .from("setup_sheets")
+    .update({ feedback })
+    .eq("session_id", sessionId);
 
   if (error) {
     redirect(
-      `/dashboard/sessions/${sessionId}/testing-setups?error=${encodeURIComponent(error.message)}`,
+      `/dashboard/sessions/${sessionId}/setup?error=${encodeURIComponent(error.message)}`,
     );
   }
 
-  revalidatePath(`/dashboard/sessions/${sessionId}/testing-setups`);
-  redirect(`/dashboard/sessions/${sessionId}/testing-setups`);
+  revalidatePath(`/dashboard/sessions/${sessionId}`);
+  revalidatePath(`/dashboard/sessions/${sessionId}/setup`);
+  revalidatePath("/dashboard");
+  redirect(`/dashboard/sessions/${sessionId}/setup`);
 }
 
 export async function analyzeTelemetryFile(formData: FormData) {
