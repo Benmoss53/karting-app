@@ -202,8 +202,7 @@ function AnalysisSummary({ summary }: { summary: AimCsvSummary }) {
                   <th className="pb-2 pr-4">Time</th>
                   <th className="pb-2 pr-4">Max RPM</th>
                   <th className="pb-2 pr-4">Min RPM</th>
-                  <th className="pb-2 pr-4">Max speed</th>
-                  <th className="pb-2">Braking zones</th>
+                  <th className="pb-2">Max speed</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5 font-mono text-zinc-200">
@@ -213,48 +212,11 @@ function AnalysisSummary({ summary }: { summary: AimCsvSummary }) {
                     <td className="py-1.5 pr-4">{lap.lapTime ?? "—"}</td>
                     <td className="py-1.5 pr-4">{formatNumber(lap.maxRpm)}</td>
                     <td className="py-1.5 pr-4">{formatNumber(lap.minRpm)}</td>
-                    <td className="py-1.5 pr-4">{formatNumber(lap.maxSpeedKmh, 1)} km/h</td>
-                    <td className="py-1.5">{lap.brakingZones.length}</td>
+                    <td className="py-1.5">{formatNumber(lap.maxSpeedKmh, 1)} km/h</td>
                   </tr>
                 ))}
               </tbody>
             </table>
-          </div>
-        </details>
-      )}
-
-      {summary.laps.some((lap) => lap.brakingZones.length > 0) && (
-        <details className="mt-4">
-          <summary className="cursor-pointer text-sm font-medium text-blue-400 hover:text-blue-300">
-            Braking zones (by lap)
-          </summary>
-          <p className="mt-2 text-xs text-zinc-500">
-            Detected from GPS speed deceleration — an approximation, not a direct brake sensor
-            reading.
-          </p>
-          <div className="mt-3 flex flex-col gap-4">
-            {summary.laps
-              .filter((lap) => lap.brakingZones.length > 0)
-              .map((lap) => (
-                <div key={lap.lap}>
-                  <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-zinc-500">
-                    Lap {lap.lap}
-                  </p>
-                  <ul className="flex flex-col divide-y divide-white/5 font-mono text-sm text-zinc-200">
-                    {lap.brakingZones.map((zone, idx) => (
-                      <li key={idx} className="flex items-center justify-between py-1.5">
-                        <span>
-                          {Math.round(zone.startDistanceM)}m → {Math.round(zone.endDistanceM)}m
-                        </span>
-                        <span>
-                          {formatNumber(zone.entrySpeedKmh, 1)} → {formatNumber(zone.exitSpeedKmh, 1)} km/h
-                        </span>
-                        <span className="text-zinc-500">{zone.durationSeconds.toFixed(2)}s</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
           </div>
         </details>
       )}

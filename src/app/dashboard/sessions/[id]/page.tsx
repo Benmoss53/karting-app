@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import DeleteSessionButton from "@/components/delete-session-button";
 
 const DAY_TYPE_LABEL: Record<string, string> = {
   race_meeting: "Race meeting",
@@ -154,6 +155,10 @@ export default async function SessionHubPage({
             </span>
           </Link>
         ))}
+      </div>
+
+      <div className="mt-8">
+        <DeleteSessionButton sessionId={session.id} trackName={session.track_name} />
       </div>
     </div>
   );

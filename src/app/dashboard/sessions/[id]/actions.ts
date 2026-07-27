@@ -161,3 +161,46 @@ export async function analyzeTelemetryFile(formData: FormData) {
   revalidatePath(`/dashboard/sessions/${sessionId}/mychron`);
   redirect(`/dashboard/sessions/${sessionId}/mychron`);
 }
+
+export async function deleteSession(formData: FormData) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  const sessionId = formData.get("sessionId") as string;
+
+  const { data: files } = await supabase
+    .from("telemetry_files")
+    .select("storage_path, file_type")
+    .eq("session_id", sessionId);
+
+  if (files && files.length > 0) {
+    const pathsByBucket = new Map<string, string[]>();
+    for (const file of files) {
+      const bucket = BUCKET_BY_TYPE[file.file_type] ?? "telemetry";
+      const paths = pathsByBucket.get(bucket) ?? [];
+      paths.push(file.storage_path);
+      pathsByBucket.set(bucket, paths);
+    }
+    await Promise.all(
+      [...pathsByBucket.entries()].map(([bucket, paths]) =>
+        supabase.storage.from(bucket).remove(paths),
+      ),
+    );
+  }
+
+  const { error } = await supabase.from("sessions").delete().eq("id", sessionId);
+
+  if (error) {
+    redirect(`/dashboard/sessions/${sessionId}?error=${encodeURIComponent(error.message)}`);
+  }
+
+  revalidatePath("/dashboard");
+  redirect("/dashboard");
+}
