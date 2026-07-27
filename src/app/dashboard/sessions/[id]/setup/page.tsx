@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { submitSetupEntry, saveSetupFeedback } from "../actions";
+import { submitSetupEntry, updateSetupEntry, saveSetupFeedback } from "../actions";
 import { SETUP_SHEET_FIELDS } from "@/lib/setup-sheet";
 import SetupEntryLog from "@/components/setup-entry-log";
 
@@ -119,35 +119,49 @@ export default async function SetupSheetPage({
           )}
 
           {pendingEntry ? (
-            <div className={cardClass}>
-              <h2 className="mb-1 text-sm font-medium text-zinc-400">Log what that change did</h2>
-              {!pendingIsToday && pendingSessionLabel && (
-                <p className="mb-3 text-xs text-zinc-500">
-                  From {pendingSessionLabel.track_name} on {pendingSessionLabel.session_date} — you
-                  need to log this before submitting a new change.
-                </p>
-              )}
-              <form action={saveSetupFeedback} className="mt-3 flex flex-col gap-3">
+            <>
+              <form action={updateSetupEntry} className="flex flex-col gap-6">
                 <input type="hidden" name="sessionId" value={id} />
                 <input type="hidden" name="entryId" value={pendingEntry.id} />
-                <label htmlFor="feedback" className={labelClass}>
-                  How did the kart feel?
-                </label>
-                <textarea
-                  id="feedback"
-                  name="feedback"
-                  rows={3}
-                  placeholder="e.g. Gave more steer into the corner but felt loose on exit"
-                  className={inputClass}
-                />
+                <SpecFields values={pendingEntry} />
                 <button
                   type="submit"
-                  className="inline-flex items-center justify-center self-start rounded-lg bg-red-500 px-4 py-2.5 text-sm font-semibold text-white shadow-[0_0_20px_-6px_rgba(239,68,68,0.5)] transition-all duration-200 hover:scale-[1.02] hover:bg-red-400 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2 focus:ring-offset-zinc-900 active:scale-[0.98]"
+                  className="inline-flex items-center justify-center self-start rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-[0_0_20px_-6px_rgba(37,99,235,0.7)] transition-all duration-200 hover:scale-[1.02] hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-zinc-900 active:scale-[0.98]"
                 >
-                  Save feedback
+                  Update setup
                 </button>
               </form>
-            </div>
+
+              <div className={`mt-6 ${cardClass}`}>
+                <h2 className="mb-1 text-sm font-medium text-zinc-400">Log what that change did</h2>
+                {!pendingIsToday && pendingSessionLabel && (
+                  <p className="mb-3 text-xs text-zinc-500">
+                    From {pendingSessionLabel.track_name} on {pendingSessionLabel.session_date} — you
+                    need to log this before submitting a new change.
+                  </p>
+                )}
+                <form action={saveSetupFeedback} className="mt-3 flex flex-col gap-3">
+                  <input type="hidden" name="sessionId" value={id} />
+                  <input type="hidden" name="entryId" value={pendingEntry.id} />
+                  <label htmlFor="feedback" className={labelClass}>
+                    How did the kart feel?
+                  </label>
+                  <textarea
+                    id="feedback"
+                    name="feedback"
+                    rows={3}
+                    placeholder="e.g. Gave more steer into the corner but felt loose on exit"
+                    className={inputClass}
+                  />
+                  <button
+                    type="submit"
+                    className="inline-flex items-center justify-center self-start rounded-lg bg-red-500 px-4 py-2.5 text-sm font-semibold text-white shadow-[0_0_20px_-6px_rgba(239,68,68,0.5)] transition-all duration-200 hover:scale-[1.02] hover:bg-red-400 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2 focus:ring-offset-zinc-900 active:scale-[0.98]"
+                  >
+                    Save feedback
+                  </button>
+                </form>
+              </div>
+            </>
           ) : (
             <>
               {latestEntry && (
@@ -158,58 +172,7 @@ export default async function SetupSheetPage({
 
               <form action={submitSetupEntry} className="flex flex-col gap-6">
                 <input type="hidden" name="sessionId" value={session.id} />
-
-                <div className={cardClass}>
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    {SETUP_SHEET_FIELDS.filter(
-                      ({ key }) => key !== "seat_position_a" && key !== "seat_position_b",
-                    ).map(({ label, name, key }) => (
-                      <Field
-                        key={key}
-                        label={label}
-                        name={name}
-                        defaultValue={latestEntry?.[key] as string | null | undefined}
-                      />
-                    ))}
-                  </div>
-                </div>
-
-                <div className={cardClass}>
-                  <h2 className="mb-4 text-sm font-medium text-zinc-400">Seat position</h2>
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <div>
-                      <label htmlFor="seatPositionA" className={labelClass}>
-                        A
-                      </label>
-                      <p className="mb-1.5 text-xs text-zinc-500">
-                        Distance above/below bottom of chassis rail
-                      </p>
-                      <input
-                        id="seatPositionA"
-                        name="seatPositionA"
-                        type="text"
-                        defaultValue={(latestEntry?.seat_position_a as string) ?? ""}
-                        className={inputClass}
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="seatPositionB" className={labelClass}>
-                        B
-                      </label>
-                      <p className="mb-1.5 text-xs text-zinc-500">
-                        Measured at 45° angle from axle to seat back
-                      </p>
-                      <input
-                        id="seatPositionB"
-                        name="seatPositionB"
-                        type="text"
-                        defaultValue={(latestEntry?.seat_position_b as string) ?? ""}
-                        className={inputClass}
-                      />
-                    </div>
-                  </div>
-                </div>
-
+                <SpecFields values={latestEntry} />
                 <button
                   type="submit"
                   className="inline-flex items-center justify-center self-start rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-[0_0_20px_-6px_rgba(37,99,235,0.7)] transition-all duration-200 hover:scale-[1.02] hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-zinc-900 active:scale-[0.98]"
@@ -219,14 +182,14 @@ export default async function SetupSheetPage({
               </form>
             </>
           )}
-
-          <div className={`mt-6 ${cardClass}`}>
-            <h2 className="mb-3 text-sm font-medium text-zinc-400">This day&apos;s log</h2>
-            <SetupEntryLog entries={(todayEntries ?? []) as Entry[]} />
-          </div>
         </div>
 
         <aside className="lg:sticky lg:top-6 lg:self-start">
+          <div className={`mb-6 ${cardClass}`}>
+            <h2 className="mb-3 text-sm font-medium text-zinc-400">This day&apos;s log</h2>
+            <SetupEntryLog entries={(todayEntries ?? []) as Entry[]} />
+          </div>
+
           <h2 className="mb-3 text-sm font-medium text-zinc-400">Previous days</h2>
           {priorDays.length === 0 ? (
             <p className="text-sm text-zinc-500">No previous days logged yet.</p>
@@ -270,5 +233,57 @@ function Field({
       </label>
       <input id={name} name={name} type="text" defaultValue={defaultValue ?? ""} className={inputClass} />
     </div>
+  );
+}
+
+function SpecFields({ values }: { values: Record<string, unknown> | null }) {
+  return (
+    <>
+      <div className={cardClass}>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {SETUP_SHEET_FIELDS.filter(
+            ({ key }) => key !== "seat_position_a" && key !== "seat_position_b",
+          ).map(({ label, name, key }) => (
+            <Field key={key} label={label} name={name} defaultValue={values?.[key] as string | null | undefined} />
+          ))}
+        </div>
+      </div>
+
+      <div className={cardClass}>
+        <h2 className="mb-4 text-sm font-medium text-zinc-400">Seat position</h2>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div>
+            <label htmlFor="seatPositionA" className={labelClass}>
+              A
+            </label>
+            <p className="mb-1.5 text-xs text-zinc-500">
+              Distance above/below bottom of chassis rail
+            </p>
+            <input
+              id="seatPositionA"
+              name="seatPositionA"
+              type="text"
+              defaultValue={(values?.seat_position_a as string) ?? ""}
+              className={inputClass}
+            />
+          </div>
+          <div>
+            <label htmlFor="seatPositionB" className={labelClass}>
+              B
+            </label>
+            <p className="mb-1.5 text-xs text-zinc-500">
+              Measured at 45° angle from axle to seat back
+            </p>
+            <input
+              id="seatPositionB"
+              name="seatPositionB"
+              type="text"
+              defaultValue={(values?.seat_position_b as string) ?? ""}
+              className={inputClass}
+            />
+          </div>
+        </div>
+      </div>
+    </>
   );
 }

@@ -97,6 +97,8 @@ export function parseAimCsv(text: string): AimCsvData {
 export type TracePoint = {
   distanceM: number;
   speedKmh: number;
+  rpm: number | null;
+  lambda: number | null;
 };
 
 export type LapSummary = {
@@ -107,6 +109,8 @@ export type LapSummary = {
   maxRpm: number | null;
   minRpm: number | null;
   maxSpeedKmh: number | null;
+  maxLateralG: number | null;
+  avgLambda: number | null;
   speedTrace: TracePoint[];
 };
 
@@ -121,8 +125,39 @@ export type AimCsvSummary = {
   minRpm: number | null;
   maxSpeedKmh: number | null;
   avgSpeedKmh: number | null;
+  maxLateralG: number | null;
+  minLambda: number | null;
+  maxLambda: number | null;
+  avgLambda: number | null;
   laps: LapSummary[];
 };
+
+// AiM devices label the lateral accelerometer channel differently depending
+// on configuration (e.g. "GPS LatAcc", "Lateral Acc", "Ay"), so detect it by
+// unit ("g") plus a loose name match rather than an exact column name.
+function findLateralGColumn(columns: string[], units: string[]): number {
+  const gIndexes: number[] = [];
+  for (let i = 0; i < columns.length; i++) {
+    if (/^g$/i.test((units[i] ?? "").trim())) gIndexes.push(i);
+  }
+
+  const named = gIndexes.find((idx) => /lat/i.test(columns[idx]));
+  if (named !== undefined) return named;
+
+  // Only one unlabeled g-channel logged — assume it's lateral (cornering),
+  // the most common single-axis setup in karting data loggers.
+  return gIndexes.length === 1 ? gIndexes[0] : -1;
+}
+
+function maxAbs(idx: number, rowSubset: number[][]): number | null {
+  if (idx === -1 || rowSubset.length === 0) return null;
+  let max = 0;
+  for (const row of rowSubset) {
+    const v = Math.abs(row[idx]);
+    if (v > max) max = v;
+  }
+  return max;
+}
 
 function columnStats(idx: number, rowSubset: number[][]) {
   if (idx === -1 || rowSubset.length === 0) {
@@ -142,37 +177,50 @@ function columnStats(idx: number, rowSubset: number[][]) {
 
 const MAX_TRACE_POINTS = 250;
 
-function buildSpeedTrace(lapRows: number[][], speedIdx: number, distIdx: number): TracePoint[] {
+function buildTrace(
+  lapRows: number[][],
+  speedIdx: number,
+  distIdx: number,
+  rpmIdx: number,
+  lambdaIdx: number,
+): TracePoint[] {
   if (speedIdx === -1 || distIdx === -1 || lapRows.length === 0) return [];
 
   const baseDistance = lapRows[0][distIdx];
   const step = Math.max(1, Math.ceil(lapRows.length / MAX_TRACE_POINTS));
 
+  const point = (row: number[]): TracePoint => ({
+    distanceM: row[distIdx] - baseDistance,
+    speedKmh: row[speedIdx],
+    rpm: rpmIdx === -1 ? null : row[rpmIdx],
+    lambda: lambdaIdx === -1 ? null : row[lambdaIdx],
+  });
+
   const trace: TracePoint[] = [];
   for (let i = 0; i < lapRows.length; i += step) {
-    trace.push({
-      distanceM: lapRows[i][distIdx] - baseDistance,
-      speedKmh: lapRows[i][speedIdx],
-    });
+    trace.push(point(lapRows[i]));
   }
   const last = lapRows[lapRows.length - 1];
   if (trace[trace.length - 1]?.distanceM !== last[distIdx] - baseDistance) {
-    trace.push({ distanceM: last[distIdx] - baseDistance, speedKmh: last[speedIdx] });
+    trace.push(point(last));
   }
   return trace;
 }
 
 export function summarizeAimCsv(parsed: AimCsvData): AimCsvSummary {
-  const { meta, beaconMarkers, segmentTimes, columns, rows } = parsed;
+  const { meta, beaconMarkers, segmentTimes, columns, units, rows } = parsed;
 
   const timeIdx = 0;
   const rpmIdx = columns.indexOf("RPM");
   const speedIdx = columns.indexOf("GPS Speed");
   const distIdx = columns.indexOf("Distance on GPS Speed");
   const sampleRateHz = meta["Sample Rate"] ? Number(meta["Sample Rate"]) : null;
+  const lateralIdx = findLateralGColumn(columns, units);
+  const lambdaIdx = columns.findIndex((c) => /lambda/i.test(c));
 
   const overallRpm = columnStats(rpmIdx, rows);
   const overallSpeed = columnStats(speedIdx, rows);
+  const overallLambda = columnStats(lambdaIdx, rows);
 
   const laps: LapSummary[] = [];
   let lapStart = 0;
@@ -189,7 +237,9 @@ export function summarizeAimCsv(parsed: AimCsvData): AimCsvSummary {
       maxRpm: rpmStats.max,
       minRpm: rpmStats.min,
       maxSpeedKmh: speedStats.max,
-      speedTrace: buildSpeedTrace(lapRows, speedIdx, distIdx),
+      maxLateralG: maxAbs(lateralIdx, lapRows),
+      avgLambda: columnStats(lambdaIdx, lapRows).avg,
+      speedTrace: buildTrace(lapRows, speedIdx, distIdx, rpmIdx, lambdaIdx),
     });
     lapStart = lapEnd;
   }
@@ -205,6 +255,10 @@ export function summarizeAimCsv(parsed: AimCsvData): AimCsvSummary {
     minRpm: overallRpm.min,
     maxSpeedKmh: overallSpeed.max,
     avgSpeedKmh: overallSpeed.avg,
+    maxLateralG: maxAbs(lateralIdx, rows),
+    minLambda: overallLambda.min,
+    maxLambda: overallLambda.max,
+    avgLambda: overallLambda.avg,
     laps,
   };
 }

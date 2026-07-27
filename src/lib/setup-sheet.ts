@@ -15,6 +15,8 @@ export const SETUP_SHEET_FIELDS: { label: string; name: string; key: string }[] 
   { label: "Rear ride height", name: "rearRideHeight", key: "rear_ride_height" },
   { label: "Rear bar", name: "rearBar", key: "rear_bar" },
   { label: "Rear wheels", name: "rearWheels", key: "rear_wheels" },
+  { label: "Front sprocket", name: "frontSprocket", key: "front_sprocket" },
+  { label: "Rear sprocket", name: "rearSprocket", key: "rear_sprocket" },
   { label: "Seat position A", name: "seatPositionA", key: "seat_position_a" },
   { label: "Seat position B", name: "seatPositionB", key: "seat_position_b" },
 ];

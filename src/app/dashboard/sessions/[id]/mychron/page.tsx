@@ -13,8 +13,8 @@ const FILE_TYPE_BADGE: Record<string, string> = {
   other: "bg-white/5 text-zinc-300 ring-1 ring-inset ring-white/10",
 };
 
-function formatNumber(value: number | null, digits = 0) {
-  return value === null ? "—" : value.toFixed(digits);
+function formatNumber(value: number | null | undefined, digits = 0) {
+  return value == null ? "—" : value.toFixed(digits);
 }
 
 export default async function MyChronDataPage({
@@ -188,6 +188,30 @@ function AnalysisSummary({ summary }: { summary: AimCsvSummary }) {
           <dt className="mb-1 text-zinc-500">Avg speed</dt>
           <dd className="font-mono text-zinc-100">{formatNumber(summary.avgSpeedKmh, 1)} km/h</dd>
         </div>
+        {summary.maxLateralG != null && (
+          <div>
+            <dt className="mb-1 text-zinc-500">Max lateral G</dt>
+            <dd className="font-mono text-zinc-100">{formatNumber(summary.maxLateralG, 2)}</dd>
+          </div>
+        )}
+        {summary.avgLambda != null && (
+          <div>
+            <dt className="mb-1 text-zinc-500">Avg lambda</dt>
+            <dd className="font-mono text-zinc-100">{formatNumber(summary.avgLambda, 2)}</dd>
+          </div>
+        )}
+        {summary.minLambda != null && (
+          <div>
+            <dt className="mb-1 text-zinc-500">Min lambda</dt>
+            <dd className="font-mono text-zinc-100">{formatNumber(summary.minLambda, 2)}</dd>
+          </div>
+        )}
+        {summary.maxLambda != null && (
+          <div>
+            <dt className="mb-1 text-zinc-500">Max lambda</dt>
+            <dd className="font-mono text-zinc-100">{formatNumber(summary.maxLambda, 2)}</dd>
+          </div>
+        )}
       </dl>
 
       {summary.laps.some((lap) => lap.speedTrace.length > 1) && (
@@ -210,7 +234,9 @@ function AnalysisSummary({ summary }: { summary: AimCsvSummary }) {
                   <th className="pb-2 pr-4">Time</th>
                   <th className="pb-2 pr-4">Max RPM</th>
                   <th className="pb-2 pr-4">Min RPM</th>
-                  <th className="pb-2">Max speed</th>
+                  <th className="pb-2 pr-4">Max speed</th>
+                  <th className="pb-2 pr-4">Max lat G</th>
+                  <th className="pb-2">Avg λ</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5 font-mono text-zinc-200">
@@ -220,7 +246,9 @@ function AnalysisSummary({ summary }: { summary: AimCsvSummary }) {
                     <td className="py-1.5 pr-4">{lap.lapTime ?? "—"}</td>
                     <td className="py-1.5 pr-4">{formatNumber(lap.maxRpm)}</td>
                     <td className="py-1.5 pr-4">{formatNumber(lap.minRpm)}</td>
-                    <td className="py-1.5">{formatNumber(lap.maxSpeedKmh, 1)} km/h</td>
+                    <td className="py-1.5 pr-4">{formatNumber(lap.maxSpeedKmh, 1)} km/h</td>
+                    <td className="py-1.5 pr-4">{formatNumber(lap.maxLateralG, 2)}</td>
+                    <td className="py-1.5">{formatNumber(lap.avgLambda, 2)}</td>
                   </tr>
                 ))}
               </tbody>

@@ -87,6 +87,42 @@ export async function submitSetupEntry(formData: FormData) {
   redirect(`/dashboard/sessions/${sessionId}/setup`);
 }
 
+export async function updateSetupEntry(formData: FormData) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  const sessionId = formData.get("sessionId") as string;
+  const entryId = formData.get("entryId") as string;
+  const errorRedirect = (message: string) =>
+    redirect(`/dashboard/sessions/${sessionId}/setup?error=${encodeURIComponent(message)}`);
+
+  const newValues: Record<string, string | null> = {};
+  for (const { name, key } of SETUP_SHEET_FIELDS) {
+    newValues[key] = textOrNull(formData, name);
+  }
+
+  // Editing a change doesn't touch its computed_changes — that was fixed
+  // relative to whatever came before it when it was first submitted.
+  const { error } = await supabase.from("setup_sheets").update(newValues).eq("id", entryId);
+
+  if (error) {
+    errorRedirect(error.message);
+    return;
+  }
+
+  revalidatePath(`/dashboard/sessions/${sessionId}`);
+  revalidatePath(`/dashboard/sessions/${sessionId}/setup`);
+  revalidatePath("/dashboard");
+  redirect(`/dashboard/sessions/${sessionId}/setup`);
+}
+
 export async function saveSetupFeedback(formData: FormData) {
   const supabase = await createClient();
 

@@ -18,8 +18,8 @@ const PALETTE = [
 
 const MAX_VISIBLE = 8;
 const WIDTH = 760;
-const HEIGHT = 340;
-const PAD = { top: 16, right: 16, bottom: 32, left: 48 };
+const CHART_HEIGHT = 170;
+const PAD = { top: 12, right: 16, bottom: 26, left: 52 };
 
 type LapTrace = {
   lap: number;
@@ -27,8 +27,39 @@ type LapTrace = {
   speedTrace: TracePoint[];
 };
 
+type Channel = {
+  key: string;
+  label: string;
+  accessor: (p: TracePoint) => number | null;
+  domain: { min: number; max: number };
+  ticks: number[];
+  formatTick: (v: number) => string;
+  formatReadout: (v: number) => string;
+  showEndLabel: boolean;
+};
+
 function niceMax(value: number, step: number) {
   return Math.ceil(value / step) * step;
+}
+
+// Magnitude channels (speed, RPM) read most naturally from a zero baseline.
+function zeroBasedDomain(values: number[], step: number) {
+  if (values.length === 0) return { min: 0, max: step };
+  return { min: 0, max: niceMax(Math.max(1, ...values), step) };
+}
+
+// Lambda hovers narrowly around 1.0 — a zero baseline would flatten it to an
+// unreadable line, so scale to the observed range with a little padding.
+function rangeDomain(values: number[]) {
+  if (values.length === 0) return { min: 0, max: 1 };
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const pad = (max - min) * 0.15 || 0.05;
+  return { min: min - pad, max: max + pad };
+}
+
+function evenTicks(min: number, max: number, count = 4) {
+  return Array.from({ length: count + 1 }, (_, i) => min + ((max - min) * i) / count);
 }
 
 function findNearest(trace: TracePoint[], distanceM: number): TracePoint | null {
@@ -57,7 +88,7 @@ export default function SpeedDistanceChart({ laps }: { laps: LapTrace[] }) {
     () => new Set(lapsWithData.slice(0, Math.min(3, lapsWithData.length)).map((l) => l.lap)),
   );
   const [hoverDistance, setHoverDistance] = useState<number | null>(null);
-  const svgRef = useRef<SVGSVGElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const visibleLaps = lapsWithData.filter((lap) => visible.has(lap.lap));
   const colorByLap = new Map(
@@ -70,16 +101,10 @@ export default function SpeedDistanceChart({ laps }: { laps: LapTrace[] }) {
     1,
     ...lapsWithData.flatMap((lap) => lap.speedTrace.map((p) => p.distanceM)),
   );
-  const maxSpeed = niceMax(
-    Math.max(1, ...lapsWithData.flatMap((lap) => lap.speedTrace.map((p) => p.speedKmh))),
-    20,
-  );
 
   const plotW = WIDTH - PAD.left - PAD.right;
-  const plotH = HEIGHT - PAD.top - PAD.bottom;
-
+  const plotH = CHART_HEIGHT - PAD.top - PAD.bottom;
   const xScale = (d: number) => PAD.left + (d / maxDistance) * plotW;
-  const yScale = (s: number) => PAD.top + plotH - (s / maxSpeed) * plotH;
 
   function toggleLap(lapNum: number) {
     setVisible((prev) => {
@@ -93,10 +118,10 @@ export default function SpeedDistanceChart({ laps }: { laps: LapTrace[] }) {
     });
   }
 
-  function handlePointerMove(event: PointerEvent<SVGSVGElement>) {
-    const svg = svgRef.current;
-    if (!svg) return;
-    const rect = svg.getBoundingClientRect();
+  function handlePointerMove(event: PointerEvent<HTMLDivElement>) {
+    const el = containerRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
     const x = ((event.clientX - rect.left) / rect.width) * WIDTH;
     const distance = ((x - PAD.left) / plotW) * maxDistance;
     if (distance < 0 || distance > maxDistance) {
@@ -106,12 +131,66 @@ export default function SpeedDistanceChart({ laps }: { laps: LapTrace[] }) {
     setHoverDistance(distance);
   }
 
-  const yTicks = Array.from({ length: maxSpeed / 20 + 1 }, (_, i) => i * 20);
   const xTickStep = maxDistance > 600 ? 200 : 100;
   const xTicks = Array.from(
     { length: Math.floor(maxDistance / xTickStep) + 1 },
     (_, i) => i * xTickStep,
   );
+
+  // Analyses stored before rpm/lambda were tracked simply lack the keys
+  // (undefined, not null) — filter with `!= null` to catch both.
+  const speedValues = lapsWithData.flatMap((lap) => lap.speedTrace.map((p) => p.speedKmh));
+  const rpmValues = lapsWithData.flatMap((lap) =>
+    lap.speedTrace.map((p) => p.rpm).filter((v): v is number => v != null),
+  );
+  const lambdaValues = lapsWithData.flatMap((lap) =>
+    lap.speedTrace.map((p) => p.lambda).filter((v): v is number => v != null),
+  );
+
+  const speedDomain = zeroBasedDomain(speedValues, 20);
+  const rpmDomain = zeroBasedDomain(rpmValues, 2000);
+  const lambdaDomain = rangeDomain(lambdaValues);
+
+  const channels: Channel[] = [
+    {
+      key: "speed",
+      label: "Speed (km/h)",
+      accessor: (p) => p.speedKmh,
+      domain: speedDomain,
+      ticks: evenTicks(speedDomain.min, speedDomain.max),
+      formatTick: (v) => Math.round(v).toString(),
+      formatReadout: (v) => `${v.toFixed(1)} km/h`,
+      showEndLabel: true,
+    },
+    ...(rpmValues.length > 0
+      ? [
+          {
+            key: "rpm",
+            label: "RPM",
+            accessor: (p: TracePoint) => p.rpm,
+            domain: rpmDomain,
+            ticks: evenTicks(rpmDomain.min, rpmDomain.max),
+            formatTick: (v: number) => Math.round(v).toString(),
+            formatReadout: (v: number) => `${Math.round(v)} rpm`,
+            showEndLabel: false,
+          },
+        ]
+      : []),
+    ...(lambdaValues.length > 0
+      ? [
+          {
+            key: "lambda",
+            label: "Lambda",
+            accessor: (p: TracePoint) => p.lambda,
+            domain: lambdaDomain,
+            ticks: evenTicks(lambdaDomain.min, lambdaDomain.max),
+            formatTick: (v: number) => v.toFixed(2),
+            formatReadout: (v: number) => `${v.toFixed(2)} λ`,
+            showEndLabel: false,
+          },
+        ]
+      : []),
+  ];
 
   const hoverReadouts =
     hoverDistance === null
@@ -173,75 +252,116 @@ export default function SpeedDistanceChart({ laps }: { laps: LapTrace[] }) {
         </p>
       )}
 
-      <svg
-        ref={svgRef}
-        viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
-        className="w-full touch-none"
+      <div
+        ref={containerRef}
+        className="touch-none"
         onPointerMove={handlePointerMove}
         onPointerLeave={() => setHoverDistance(null)}
       >
-        {yTicks.map((tick) => (
-          <g key={tick}>
-            <line
-              x1={PAD.left}
-              x2={WIDTH - PAD.right}
-              y1={yScale(tick)}
-              y2={yScale(tick)}
-              stroke="#2c2c2a"
-              strokeWidth={1}
-            />
-            <text x={PAD.left - 8} y={yScale(tick)} textAnchor="end" dy="0.32em" fontSize={11} fill="#898781">
-              {tick}
-            </text>
-          </g>
-        ))}
-        {xTicks.map((tick) => (
-          <text
-            key={tick}
-            x={xScale(tick)}
-            y={HEIGHT - 10}
-            textAnchor="middle"
-            fontSize={11}
-            fill="#898781"
-          >
-            {tick}m
-          </text>
-        ))}
+        {channels.map((channel, channelIdx) => {
+          const isLast = channelIdx === channels.length - 1;
+          const span = channel.domain.max - channel.domain.min || 1;
+          const yScale = (v: number) => PAD.top + plotH - ((v - channel.domain.min) / span) * plotH;
 
-        {visibleLaps.map((lap) => {
-          const color = colorByLap.get(lap.lap)!;
-          const d = lap.speedTrace
-            .map((p, i) => `${i === 0 ? "M" : "L"} ${xScale(p.distanceM)} ${yScale(p.speedKmh)}`)
-            .join(" ");
-          const last = lap.speedTrace[lap.speedTrace.length - 1];
           return (
-            <g key={lap.lap}>
-              <path d={d} fill="none" stroke={color} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
-              <circle cx={xScale(last.distanceM)} cy={yScale(last.speedKmh)} r={4} fill={color} stroke="#18181b" strokeWidth={2} />
-              <text
-                x={xScale(last.distanceM) + 6}
-                y={yScale(last.speedKmh)}
-                fontSize={11}
-                fill="#c3c2b7"
-                dy="0.32em"
-              >
-                {lap.lap}
-              </text>
-            </g>
+            <div key={channel.key} className={channelIdx > 0 ? "mt-1" : undefined}>
+              <p className="mb-1 text-xs font-medium text-zinc-500">{channel.label}</p>
+              <svg viewBox={`0 0 ${WIDTH} ${CHART_HEIGHT}`} className="w-full">
+                {channel.ticks.map((tick) => (
+                  <g key={tick}>
+                    <line
+                      x1={PAD.left}
+                      x2={WIDTH - PAD.right}
+                      y1={yScale(tick)}
+                      y2={yScale(tick)}
+                      stroke="#2c2c2a"
+                      strokeWidth={1}
+                    />
+                    <text
+                      x={PAD.left - 8}
+                      y={yScale(tick)}
+                      textAnchor="end"
+                      dy="0.32em"
+                      fontSize={11}
+                      fill="#898781"
+                    >
+                      {channel.formatTick(tick)}
+                    </text>
+                  </g>
+                ))}
+                {isLast &&
+                  xTicks.map((tick) => (
+                    <text
+                      key={tick}
+                      x={xScale(tick)}
+                      y={CHART_HEIGHT - 8}
+                      textAnchor="middle"
+                      fontSize={11}
+                      fill="#898781"
+                    >
+                      {tick}m
+                    </text>
+                  ))}
+
+                {visibleLaps.map((lap) => {
+                  const color = colorByLap.get(lap.lap)!;
+                  const points = lap.speedTrace.filter((p) => channel.accessor(p) != null);
+                  if (points.length === 0) return null;
+                  const d = points
+                    .map(
+                      (p, i) =>
+                        `${i === 0 ? "M" : "L"} ${xScale(p.distanceM)} ${yScale(channel.accessor(p)!)}`,
+                    )
+                    .join(" ");
+                  const last = points[points.length - 1];
+                  return (
+                    <g key={lap.lap}>
+                      <path
+                        d={d}
+                        fill="none"
+                        stroke={color}
+                        strokeWidth={2}
+                        strokeLinejoin="round"
+                        strokeLinecap="round"
+                      />
+                      <circle
+                        cx={xScale(last.distanceM)}
+                        cy={yScale(channel.accessor(last)!)}
+                        r={4}
+                        fill={color}
+                        stroke="#18181b"
+                        strokeWidth={2}
+                      />
+                      {channel.showEndLabel && (
+                        <text
+                          x={xScale(last.distanceM) + 6}
+                          y={yScale(channel.accessor(last)!)}
+                          fontSize={11}
+                          fill="#c3c2b7"
+                          dy="0.32em"
+                        >
+                          {lap.lap}
+                        </text>
+                      )}
+                    </g>
+                  );
+                })}
+
+                {hoverDistance !== null && (
+                  <line
+                    x1={xScale(hoverDistance)}
+                    x2={xScale(hoverDistance)}
+                    y1={PAD.top}
+                    y2={PAD.top + plotH}
+                    stroke="#c3c2b7"
+                    strokeWidth={1}
+                  />
+                )}
+              </svg>
+            </div>
           );
         })}
-
-        {hoverDistance !== null && (
-          <line
-            x1={xScale(hoverDistance)}
-            x2={xScale(hoverDistance)}
-            y1={PAD.top}
-            y2={PAD.top + plotH}
-            stroke="#c3c2b7"
-            strokeWidth={1}
-          />
-        )}
-      </svg>
+      </div>
 
       {hoverReadouts.length > 0 && (
         <div className="mt-2 rounded-lg border border-white/10 bg-zinc-950/80 p-3 text-xs">
@@ -250,12 +370,20 @@ export default function SpeedDistanceChart({ laps }: { laps: LapTrace[] }) {
           </p>
           <div className="flex flex-col gap-1">
             {hoverReadouts.map((r) => (
-              <div key={r.lap} className="flex items-center gap-2">
-                <span className="h-0.5 w-4" style={{ backgroundColor: r.color }} />
-                <span className="text-zinc-400">Lap {r.lap}</span>
+              <div key={r.lap} className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                <span className="flex items-center gap-2">
+                  <span className="h-0.5 w-4" style={{ backgroundColor: r.color }} />
+                  <span className="text-zinc-400">Lap {r.lap}</span>
+                </span>
                 <span className="font-mono font-semibold text-zinc-100">
                   {r.point!.speedKmh.toFixed(1)} km/h
                 </span>
+                {r.point!.rpm != null && (
+                  <span className="font-mono text-zinc-300">{Math.round(r.point!.rpm)} rpm</span>
+                )}
+                {r.point!.lambda != null && (
+                  <span className="font-mono text-zinc-300">{r.point!.lambda.toFixed(2)} λ</span>
+                )}
               </div>
             ))}
           </div>
