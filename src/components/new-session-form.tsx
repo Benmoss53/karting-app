@@ -4,10 +4,9 @@ import { useState } from "react";
 import { createSession, getWeatherSuggestion } from "@/app/dashboard/actions";
 
 const inputClass =
-  "w-full rounded-lg border border-white/10 bg-zinc-950/60 px-3 py-2.5 text-sm text-zinc-100 shadow-sm transition-colors focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500";
-const labelClass = "mb-1.5 block text-sm font-medium text-zinc-300";
-const cardClass =
-  "rounded-xl border border-white/10 bg-zinc-900/60 p-6 shadow-lg shadow-black/20 backdrop-blur-sm";
+  "w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 shadow-sm transition-colors focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500";
+const labelClass = "mb-1.5 block text-sm font-medium text-slate-700";
+const cardClass = "rounded-xl border border-slate-200 bg-white p-6 shadow-sm";
 
 type AutofillStatus =
   | { state: "idle" }
@@ -39,7 +38,7 @@ export default function NewSessionForm() {
   return (
     <form action={createSession} className="flex flex-col gap-6">
       <div className={cardClass}>
-        <h2 className="mb-4 text-sm font-medium text-zinc-400">Day info</h2>
+        <h2 className="mb-4 text-sm font-medium text-slate-500">Day info</h2>
         <div className="flex flex-col gap-4">
           <div>
             <label htmlFor="trackName" className={labelClass}>
@@ -118,21 +117,21 @@ export default function NewSessionForm() {
 
       <div className={cardClass}>
         <div className="mb-4 flex items-center justify-between gap-3">
-          <h2 className="text-sm font-medium text-zinc-400">Weather conditions</h2>
+          <h2 className="text-sm font-medium text-slate-500">Weather conditions</h2>
           <button
             type="button"
             onClick={handleAutofill}
             disabled={autofill.state === "loading" || !trackName.trim()}
-            className="inline-flex items-center justify-center rounded-lg border border-white/15 bg-white/5 px-3 py-1.5 text-xs font-semibold text-zinc-200 transition-colors hover:border-blue-400/40 hover:bg-blue-500/10 hover:text-blue-300 disabled:cursor-not-allowed disabled:opacity-40"
+            className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition-colors hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-40"
           >
             {autofill.state === "loading" ? "Looking up…" : "Auto-fill from track"}
           </button>
         </div>
         {autofill.state === "error" && (
-          <p className="mb-3 text-xs text-red-300">{autofill.message}</p>
+          <p className="mb-3 text-xs text-rose-600">{autofill.message}</p>
         )}
         {autofill.state === "done" && (
-          <p className="mb-3 text-xs text-blue-300">{autofill.message}</p>
+          <p className="mb-3 text-xs text-blue-600">{autofill.message}</p>
         )}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
@@ -167,7 +166,7 @@ export default function NewSessionForm() {
           </div>
           <div>
             <label htmlFor="trackTemp" className={labelClass}>
-              Track temp <span className="font-normal text-zinc-500">(optional)</span>
+              Track temp <span className="font-normal text-slate-400">(optional)</span>
             </label>
             <input
               id="trackTemp"
@@ -198,7 +197,7 @@ export default function NewSessionForm() {
 
       <div className={cardClass}>
         <label htmlFor="setupNotes" className={labelClass}>
-          Notes <span className="font-normal text-zinc-500">(optional)</span>
+          Notes <span className="font-normal text-slate-400">(optional)</span>
         </label>
         <textarea
           id="setupNotes"
@@ -211,7 +210,7 @@ export default function NewSessionForm() {
 
       <button
         type="submit"
-        className="inline-flex items-center justify-center self-start rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-[0_0_20px_-6px_rgba(37,99,235,0.7)] transition-all duration-200 hover:scale-[1.02] hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-black active:scale-[0.98]"
+        className="inline-flex items-center justify-center self-start rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-white active:scale-[0.98]"
       >
         Add day
       </button>

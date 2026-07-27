@@ -36,10 +36,10 @@ export default function AiCoachChat({ entryCount }: { entryCount: number }) {
   }
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-gradient-to-b from-zinc-900/80 to-zinc-900/60 p-6 shadow-xl shadow-black/30 backdrop-blur-sm sm:p-8">
+    <div className="rounded-2xl border border-blue-100 bg-white p-6 shadow-sm sm:p-8">
       <div className="mb-5 flex min-h-[100px] flex-col gap-3">
         {messages.length === 0 ? (
-          <p className="text-base text-zinc-400">
+          <p className="text-base text-slate-500">
             {entryCount > 0
               ? `You have feedback logged for ${entryCount} ${
                   entryCount === 1 ? "day" : "days"
@@ -52,8 +52,8 @@ export default function AiCoachChat({ entryCount }: { entryCount: number }) {
               key={index}
               className={`max-w-[85%] animate-[fadeIn_0.2s_ease-out] rounded-xl px-4 py-3 text-base leading-relaxed ${
                 message.role === "user"
-                  ? "self-end bg-blue-600 text-white shadow-[0_0_16px_-6px_rgba(37,99,235,0.8)]"
-                  : "self-start bg-white/5 text-zinc-100 ring-1 ring-inset ring-white/10"
+                  ? "self-end bg-blue-600 text-white shadow-sm"
+                  : "self-start bg-slate-100 text-slate-900 ring-1 ring-inset ring-slate-200"
               }`}
             >
               {message.text}
@@ -61,7 +61,7 @@ export default function AiCoachChat({ entryCount }: { entryCount: number }) {
           ))
         )}
         {pending && (
-          <div className="self-start rounded-xl bg-white/5 px-4 py-3 text-base text-zinc-500 ring-1 ring-inset ring-white/10">
+          <div className="self-start rounded-xl bg-slate-100 px-4 py-3 text-base text-slate-500 ring-1 ring-inset ring-slate-200">
             Thinking…
           </div>
         )}
@@ -74,12 +74,12 @@ export default function AiCoachChat({ entryCount }: { entryCount: number }) {
           onChange={(event) => setInput(event.target.value)}
           placeholder="e.g. Should I add more camber for a wet track?"
           disabled={pending}
-          className="flex-1 rounded-xl border border-white/10 bg-zinc-950/60 px-4 py-3.5 text-base text-zinc-100 shadow-sm transition-colors focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-60"
+          className="flex-1 rounded-xl border border-slate-300 bg-slate-50 px-4 py-3.5 text-base text-slate-900 shadow-sm transition-colors focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-60"
         />
         <button
           type="submit"
           disabled={pending}
-          className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-blue-600 to-red-500 px-6 py-3.5 text-base font-semibold text-white shadow-[0_0_24px_-6px_rgba(37,99,235,0.7)] transition-all duration-200 hover:scale-[1.02] hover:shadow-[0_0_28px_-4px_rgba(37,99,235,0.8)] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-zinc-900 active:scale-[0.98] disabled:opacity-60 disabled:hover:scale-100"
+          className="inline-flex items-center justify-center rounded-xl bg-blue-600 px-6 py-3.5 text-base font-semibold text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-white active:scale-[0.98] disabled:opacity-60 disabled:hover:scale-100"
         >
           {pending ? "Asking…" : "Ask the coach"}
         </button>

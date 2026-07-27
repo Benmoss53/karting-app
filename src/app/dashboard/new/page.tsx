@@ -9,12 +9,12 @@ export default async function NewSessionPage({
 
   return (
     <div className="max-w-xl">
-      <h1 className="mb-6 text-2xl font-semibold tracking-tight text-zinc-50">
+      <h1 className="mb-6 text-2xl font-semibold tracking-tight text-slate-900">
         Add a test / race day
       </h1>
 
       {params.error && (
-        <p className="mb-4 rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-300 ring-1 ring-inset ring-red-400/20">
+        <p className="mb-4 rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700 ring-1 ring-inset ring-rose-200">
           {params.error}
         </p>
       )}

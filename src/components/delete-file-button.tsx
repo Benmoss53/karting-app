@@ -25,7 +25,7 @@ export default function DeleteFileButton({
       <input type="hidden" name="fileId" value={fileId} />
       <button
         type="submit"
-        className="text-sm font-medium text-zinc-500 transition-colors hover:text-red-400"
+        className="text-sm font-medium text-slate-500 transition-colors hover:text-rose-600"
       >
         Delete
       </button>

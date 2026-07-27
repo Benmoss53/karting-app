@@ -58,24 +58,21 @@ export default async function SessionHubPage({
         entryCount === 0
           ? "Not started"
           : `${entryCount} change${entryCount === 1 ? "" : "s"}${pendingFeedback ? " · feedback pending" : ""}`,
-      accent: "from-blue-500 to-blue-400",
-      glow: "hover:shadow-blue-500/10 hover:border-blue-400/40",
+      accent: "bg-blue-600",
     },
     {
       href: `/dashboard/sessions/${id}/mychron`,
       title: "Upload MyChron Data",
       description: "Telemetry files for this day",
       status: mychronCount ? `${mychronCount} file${mychronCount === 1 ? "" : "s"}` : "No files yet",
-      accent: "from-zinc-400 to-zinc-500",
-      glow: "hover:shadow-white/5 hover:border-white/30",
+      accent: "bg-violet-600",
     },
     {
       href: `/dashboard/sessions/${id}/videos`,
       title: "Video Library",
       description: "SmartyCam footage for this day",
       status: videoCount ? `${videoCount} file${videoCount === 1 ? "" : "s"}` : "No footage yet",
-      accent: "from-red-400 to-blue-400",
-      glow: "hover:shadow-red-500/10 hover:border-red-400/40",
+      accent: "bg-amber-500",
     },
   ];
 
@@ -90,13 +87,13 @@ export default async function SessionHubPage({
 
   return (
     <div className="max-w-4xl">
-      <h1 className="text-2xl font-semibold tracking-tight text-zinc-50">
+      <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
         {session.track_name}
       </h1>
-      <div className="mb-8 mt-2 flex flex-wrap items-center gap-2 text-sm text-zinc-400">
+      <div className="mb-8 mt-2 flex flex-wrap items-center gap-2 text-sm text-slate-500">
         <span className="font-mono">{session.session_date}</span>
         {session.day_type && (
-          <span className="inline-flex rounded-full bg-white/5 px-2 py-0.5 text-xs font-medium text-zinc-300 ring-1 ring-inset ring-white/10">
+          <span className="inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700 ring-1 ring-inset ring-slate-200">
             {DAY_TYPE_LABEL[session.day_type] ?? session.day_type}
           </span>
         )}
@@ -105,7 +102,7 @@ export default async function SessionHubPage({
         {weatherChips.map((chip) => (
           <span
             key={chip}
-            className="inline-flex rounded-full bg-blue-500/10 px-2 py-0.5 font-mono text-xs font-medium capitalize text-blue-300 ring-1 ring-inset ring-blue-400/20"
+            className="inline-flex rounded-full bg-blue-50 px-2 py-0.5 font-mono text-xs font-medium capitalize text-blue-700 ring-1 ring-inset ring-blue-200"
           >
             {chip}
           </span>
@@ -113,9 +110,9 @@ export default async function SessionHubPage({
       </div>
 
       {session.setup_notes && (
-        <div className="mb-8 rounded-xl border border-white/10 bg-zinc-900/60 p-5 shadow-lg shadow-black/20 backdrop-blur-sm">
-          <h2 className="mb-2 text-sm font-medium text-zinc-400">Notes</h2>
-          <p className="whitespace-pre-wrap text-zinc-100">{session.setup_notes}</p>
+        <div className="mb-8 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h2 className="mb-2 text-sm font-medium text-slate-500">Notes</h2>
+          <p className="whitespace-pre-wrap text-slate-900">{session.setup_notes}</p>
         </div>
       )}
 
@@ -124,14 +121,14 @@ export default async function SessionHubPage({
           <Link
             key={item.href}
             href={item.href}
-            className={`group flex flex-col rounded-xl border border-white/10 bg-zinc-900/60 p-5 shadow-lg shadow-black/20 backdrop-blur-sm transition-all duration-200 hover:scale-[1.015] active:scale-[0.99] ${item.glow}`}
+            className="group flex flex-col rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-md active:translate-y-0"
           >
-            <span className={`mb-3 h-8 w-8 rounded-lg bg-gradient-to-br ${item.accent}`} />
-            <span className="font-medium text-zinc-50 group-hover:text-blue-300">
+            <span className={`mb-3 h-8 w-8 rounded-lg ${item.accent}`} />
+            <span className="font-medium text-slate-900 group-hover:text-blue-700">
               {item.title}
             </span>
-            <span className="mt-1 text-sm text-zinc-400">{item.description}</span>
-            <span className="mt-3 font-mono text-xs font-medium uppercase tracking-wide text-zinc-500">
+            <span className="mt-1 text-sm text-slate-500">{item.description}</span>
+            <span className="mt-3 font-mono text-xs font-medium uppercase tracking-wide text-slate-400">
               {item.status}
             </span>
           </Link>

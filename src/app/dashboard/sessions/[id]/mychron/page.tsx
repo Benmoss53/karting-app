@@ -9,8 +9,8 @@ import { analyzeTelemetryFile } from "../actions";
 import type { AimCsvSummary } from "@/lib/aim-csv";
 
 const FILE_TYPE_BADGE: Record<string, string> = {
-  mychron: "bg-blue-500/10 text-blue-300 ring-1 ring-inset ring-blue-400/20",
-  other: "bg-white/5 text-zinc-300 ring-1 ring-inset ring-white/10",
+  mychron: "bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-200",
+  other: "bg-slate-100 text-slate-700 ring-1 ring-inset ring-slate-200",
 };
 
 function formatNumber(value: number | null | undefined, digits = 0) {
@@ -79,30 +79,30 @@ export default async function MyChronDataPage({
     <div className="max-w-4xl">
       <Link
         href={`/dashboard/sessions/${id}`}
-        className="mb-4 inline-block text-sm font-medium text-blue-400 hover:text-blue-300"
+        className="mb-4 inline-block text-sm font-medium text-blue-600 hover:text-blue-700"
       >
         ← {session.track_name}
       </Link>
-      <h1 className="mb-6 text-2xl font-semibold tracking-tight text-zinc-50">
+      <h1 className="mb-6 text-2xl font-semibold tracking-tight text-slate-900">
         Upload MyChron Data
       </h1>
 
       {error && (
-        <p className="mb-4 rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-300 ring-1 ring-inset ring-red-400/20">
+        <p className="mb-4 rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700 ring-1 ring-inset ring-rose-200">
           {error}
         </p>
       )}
 
-      <div className="mb-6 rounded-xl border border-white/10 bg-zinc-900/60 p-5 shadow-lg shadow-black/20 backdrop-blur-sm">
+      <div className="mb-6 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
         {filesWithLinks.length === 0 ? (
-          <p className="text-sm text-zinc-500">No files uploaded yet.</p>
+          <p className="text-sm text-slate-500">No files uploaded yet.</p>
         ) : (
-          <ul className="flex flex-col divide-y divide-white/10">
+          <ul className="flex flex-col divide-y divide-slate-200">
             {filesWithLinks.map((file) => (
               <li key={file.id} className="py-3 first:pt-0 last:pb-0">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <span className="text-zinc-100">{file.file_name}</span>
+                    <span className="text-slate-900">{file.file_name}</span>
                     <span
                       className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium uppercase tracking-wide ${
                         FILE_TYPE_BADGE[file.file_type] ?? FILE_TYPE_BADGE.other
@@ -115,12 +115,12 @@ export default async function MyChronDataPage({
                     {file.downloadUrl ? (
                       <a
                         href={file.downloadUrl}
-                        className="text-sm font-medium text-blue-400 hover:text-blue-300"
+                        className="text-sm font-medium text-blue-600 hover:text-blue-700"
                       >
                         Download
                       </a>
                     ) : (
-                      <span className="text-sm text-zinc-500">Unavailable</span>
+                      <span className="text-sm text-slate-500">Unavailable</span>
                     )}
                     <DeleteFileButton
                       sessionId={id}
@@ -138,7 +138,7 @@ export default async function MyChronDataPage({
                     <input type="hidden" name="fileId" value={file.id} />
                     <button
                       type="submit"
-                      className="inline-flex items-center justify-center rounded-lg border border-white/15 bg-white/5 px-3 py-1.5 text-xs font-semibold text-zinc-200 transition-colors hover:border-blue-400/40 hover:bg-blue-500/10 hover:text-blue-300"
+                      className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition-colors hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700"
                     >
                       Analyze
                     </button>
@@ -150,7 +150,7 @@ export default async function MyChronDataPage({
         )}
       </div>
 
-      <p className="mb-6 rounded-lg bg-blue-500/10 px-3 py-2 text-sm text-blue-300 ring-1 ring-inset ring-blue-400/20">
+      <p className="mb-6 rounded-lg bg-blue-50 px-3 py-2 text-sm text-blue-700 ring-1 ring-inset ring-blue-200">
         Analysis works from a RaceStudio3 CSV export, not the raw MyChron file — export via{" "}
         <span className="font-mono">File → Export → CSV</span> in RaceStudio3, then upload and
         click Analyze.
@@ -170,66 +170,66 @@ export default async function MyChronDataPage({
 
 function AnalysisSummary({ summary }: { summary: AimCsvSummary }) {
   return (
-    <div className="mt-3 rounded-lg border border-white/10 bg-zinc-950/40 p-4">
+    <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-4">
       <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-4">
         <div>
-          <dt className="mb-1 text-zinc-500">Max RPM</dt>
-          <dd className="font-mono text-zinc-100">{formatNumber(summary.maxRpm)}</dd>
+          <dt className="mb-1 text-slate-400">Max RPM</dt>
+          <dd className="font-mono text-slate-900">{formatNumber(summary.maxRpm)}</dd>
         </div>
         <div>
-          <dt className="mb-1 text-zinc-500">Min RPM</dt>
-          <dd className="font-mono text-zinc-100">{formatNumber(summary.minRpm)}</dd>
+          <dt className="mb-1 text-slate-400">Min RPM</dt>
+          <dd className="font-mono text-slate-900">{formatNumber(summary.minRpm)}</dd>
         </div>
         <div>
-          <dt className="mb-1 text-zinc-500">Max speed</dt>
-          <dd className="font-mono text-zinc-100">{formatNumber(summary.maxSpeedKmh, 1)} km/h</dd>
+          <dt className="mb-1 text-slate-400">Max speed</dt>
+          <dd className="font-mono text-slate-900">{formatNumber(summary.maxSpeedKmh, 1)} km/h</dd>
         </div>
         <div>
-          <dt className="mb-1 text-zinc-500">Avg speed</dt>
-          <dd className="font-mono text-zinc-100">{formatNumber(summary.avgSpeedKmh, 1)} km/h</dd>
+          <dt className="mb-1 text-slate-400">Avg speed</dt>
+          <dd className="font-mono text-slate-900">{formatNumber(summary.avgSpeedKmh, 1)} km/h</dd>
         </div>
         {summary.maxLateralG != null && (
           <div>
-            <dt className="mb-1 text-zinc-500">Max lateral G</dt>
-            <dd className="font-mono text-zinc-100">{formatNumber(summary.maxLateralG, 2)}</dd>
+            <dt className="mb-1 text-slate-400">Max lateral G</dt>
+            <dd className="font-mono text-slate-900">{formatNumber(summary.maxLateralG, 2)}</dd>
           </div>
         )}
         {summary.avgLambda != null && (
           <div>
-            <dt className="mb-1 text-zinc-500">Avg lambda</dt>
-            <dd className="font-mono text-zinc-100">{formatNumber(summary.avgLambda, 2)}</dd>
+            <dt className="mb-1 text-slate-400">Avg lambda</dt>
+            <dd className="font-mono text-slate-900">{formatNumber(summary.avgLambda, 2)}</dd>
           </div>
         )}
         {summary.minLambda != null && (
           <div>
-            <dt className="mb-1 text-zinc-500">Min lambda</dt>
-            <dd className="font-mono text-zinc-100">{formatNumber(summary.minLambda, 2)}</dd>
+            <dt className="mb-1 text-slate-400">Min lambda</dt>
+            <dd className="font-mono text-slate-900">{formatNumber(summary.minLambda, 2)}</dd>
           </div>
         )}
         {summary.maxLambda != null && (
           <div>
-            <dt className="mb-1 text-zinc-500">Max lambda</dt>
-            <dd className="font-mono text-zinc-100">{formatNumber(summary.maxLambda, 2)}</dd>
+            <dt className="mb-1 text-slate-400">Max lambda</dt>
+            <dd className="font-mono text-slate-900">{formatNumber(summary.maxLambda, 2)}</dd>
           </div>
         )}
       </dl>
 
       {summary.laps.some((lap) => lap.speedTrace.length > 1) && (
         <div className="mt-5">
-          <h3 className="mb-2 text-sm font-medium text-zinc-400">Speed by distance into lap</h3>
+          <h3 className="mb-2 text-sm font-medium text-slate-500">Speed by distance into lap</h3>
           <SpeedDistanceChart laps={summary.laps} />
         </div>
       )}
 
       {summary.laps.length > 0 && (
         <details className="mt-4">
-          <summary className="cursor-pointer text-sm font-medium text-blue-400 hover:text-blue-300">
+          <summary className="cursor-pointer text-sm font-medium text-blue-600 hover:text-blue-700">
             Lap breakdown ({summary.laps.length} laps)
           </summary>
           <div className="mt-3 overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead>
-                <tr className="text-xs uppercase tracking-wide text-zinc-500">
+                <tr className="text-xs uppercase tracking-wide text-slate-400">
                   <th className="pb-2 pr-4">Lap</th>
                   <th className="pb-2 pr-4">Time</th>
                   <th className="pb-2 pr-4">Max RPM</th>
@@ -239,7 +239,7 @@ function AnalysisSummary({ summary }: { summary: AimCsvSummary }) {
                   <th className="pb-2">Avg λ</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/5 font-mono text-zinc-200">
+              <tbody className="divide-y divide-slate-200 font-mono text-slate-700">
                 {summary.laps.map((lap) => (
                   <tr key={lap.lap}>
                     <td className="py-1.5 pr-4">{lap.lap}</td>

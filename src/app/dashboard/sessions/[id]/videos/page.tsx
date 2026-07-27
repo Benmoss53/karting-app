@@ -46,34 +46,34 @@ export default async function VideoLibraryPage({
     <div className="max-w-2xl">
       <Link
         href={`/dashboard/sessions/${id}`}
-        className="mb-4 inline-block text-sm font-medium text-blue-400 hover:text-blue-300"
+        className="mb-4 inline-block text-sm font-medium text-blue-600 hover:text-blue-700"
       >
         ← {session.track_name}
       </Link>
-      <h1 className="mb-6 text-2xl font-semibold tracking-tight text-zinc-50">
+      <h1 className="mb-6 text-2xl font-semibold tracking-tight text-slate-900">
         Video Library
       </h1>
 
-      <div className="mb-6 rounded-xl border border-white/10 bg-zinc-900/60 p-5 shadow-lg shadow-black/20 backdrop-blur-sm">
+      <div className="mb-6 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
         {filesWithLinks.length === 0 ? (
-          <p className="text-sm text-zinc-500">No footage uploaded yet.</p>
+          <p className="text-sm text-slate-500">No footage uploaded yet.</p>
         ) : (
-          <ul className="flex flex-col divide-y divide-white/10">
+          <ul className="flex flex-col divide-y divide-slate-200">
             {filesWithLinks.map((file) => (
               <li
                 key={file.id}
                 className="flex items-center justify-between py-3 first:pt-0 last:pb-0"
               >
-                <span className="text-zinc-100">{file.file_name}</span>
+                <span className="text-slate-900">{file.file_name}</span>
                 {file.downloadUrl ? (
                   <a
                     href={file.downloadUrl}
-                    className="text-sm font-medium text-blue-400 hover:text-blue-300"
+                    className="text-sm font-medium text-blue-600 hover:text-blue-700"
                   >
                     Download
                   </a>
                 ) : (
-                  <span className="text-sm text-zinc-500">Unavailable</span>
+                  <span className="text-sm text-slate-500">Unavailable</span>
                 )}
               </li>
             ))}

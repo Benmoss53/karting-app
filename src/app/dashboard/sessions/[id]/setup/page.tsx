@@ -6,10 +6,9 @@ import { SETUP_SHEET_FIELDS } from "@/lib/setup-sheet";
 import SetupEntryLog from "@/components/setup-entry-log";
 
 const inputClass =
-  "w-full rounded-lg border border-white/10 bg-zinc-950/60 px-3 py-2.5 text-sm text-zinc-100 shadow-sm transition-colors focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500";
-const labelClass = "mb-1.5 block text-sm font-medium text-zinc-300";
-const cardClass =
-  "rounded-xl border border-white/10 bg-zinc-900/60 p-6 shadow-lg shadow-black/20 backdrop-blur-sm";
+  "w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 shadow-sm transition-colors focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500";
+const labelClass = "mb-1.5 block text-sm font-medium text-slate-700";
+const cardClass = "rounded-xl border border-slate-200 bg-white p-6 shadow-sm";
 
 type Entry = Record<string, unknown> & { id: string; session_id: string; created_at: string };
 
@@ -103,17 +102,17 @@ export default async function SetupSheetPage({
     <div className="max-w-5xl">
       <Link
         href={`/dashboard/sessions/${id}`}
-        className="mb-4 inline-block text-sm font-medium text-blue-400 hover:text-blue-300"
+        className="mb-4 inline-block text-sm font-medium text-blue-600 hover:text-blue-700"
       >
         ← {session.track_name}
       </Link>
-      <h1 className="text-2xl font-semibold tracking-tight text-zinc-50">Setup sheet</h1>
-      <p className="mb-6 text-sm text-zinc-500">{session.track_name}</p>
+      <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Setup sheet</h1>
+      <p className="mb-6 text-sm text-slate-500">{session.track_name}</p>
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_320px]">
         <div>
           {error && (
-            <p className="mb-4 rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-300 ring-1 ring-inset ring-red-400/20">
+            <p className="mb-4 rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700 ring-1 ring-inset ring-rose-200">
               {error}
             </p>
           )}
@@ -126,16 +125,16 @@ export default async function SetupSheetPage({
                 <SpecFields values={pendingEntry} />
                 <button
                   type="submit"
-                  className="inline-flex items-center justify-center self-start rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-[0_0_20px_-6px_rgba(37,99,235,0.7)] transition-all duration-200 hover:scale-[1.02] hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-zinc-900 active:scale-[0.98]"
+                  className="inline-flex items-center justify-center self-start rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-white active:scale-[0.98]"
                 >
                   Update setup
                 </button>
               </form>
 
               <div className={`mt-6 ${cardClass}`}>
-                <h2 className="mb-1 text-sm font-medium text-zinc-400">Log what that change did</h2>
+                <h2 className="mb-1 text-sm font-medium text-slate-500">Log what that change did</h2>
                 {!pendingIsToday && pendingSessionLabel && (
-                  <p className="mb-3 text-xs text-zinc-500">
+                  <p className="mb-3 text-xs text-slate-500">
                     From {pendingSessionLabel.track_name} on {pendingSessionLabel.session_date} — you
                     need to log this before submitting a new change.
                   </p>
@@ -155,7 +154,7 @@ export default async function SetupSheetPage({
                   />
                   <button
                     type="submit"
-                    className="inline-flex items-center justify-center self-start rounded-lg bg-red-500 px-4 py-2.5 text-sm font-semibold text-white shadow-[0_0_20px_-6px_rgba(239,68,68,0.5)] transition-all duration-200 hover:scale-[1.02] hover:bg-red-400 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2 focus:ring-offset-zinc-900 active:scale-[0.98]"
+                    className="inline-flex items-center justify-center self-start rounded-lg bg-rose-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2 focus:ring-offset-white active:scale-[0.98]"
                   >
                     Save feedback
                   </button>
@@ -165,7 +164,7 @@ export default async function SetupSheetPage({
           ) : (
             <>
               {latestEntry && (
-                <p className="mb-4 rounded-lg bg-blue-500/10 px-3 py-2 text-sm text-blue-300 ring-1 ring-inset ring-blue-400/20">
+                <p className="mb-4 rounded-lg bg-blue-50 px-3 py-2 text-sm text-blue-700 ring-1 ring-inset ring-blue-200">
                   Starting from your last logged setup — adjust what changed and submit.
                 </p>
               )}
@@ -175,7 +174,7 @@ export default async function SetupSheetPage({
                 <SpecFields values={latestEntry} />
                 <button
                   type="submit"
-                  className="inline-flex items-center justify-center self-start rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-[0_0_20px_-6px_rgba(37,99,235,0.7)] transition-all duration-200 hover:scale-[1.02] hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-zinc-900 active:scale-[0.98]"
+                  className="inline-flex items-center justify-center self-start rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-white active:scale-[0.98]"
                 >
                   Submit setup
                 </button>
@@ -186,23 +185,23 @@ export default async function SetupSheetPage({
 
         <aside className="lg:sticky lg:top-6 lg:self-start">
           <div className={`mb-6 ${cardClass}`}>
-            <h2 className="mb-3 text-sm font-medium text-zinc-400">This day&apos;s log</h2>
+            <h2 className="mb-3 text-sm font-medium text-slate-500">This day&apos;s log</h2>
             <SetupEntryLog entries={(todayEntries ?? []) as Entry[]} />
           </div>
 
-          <h2 className="mb-3 text-sm font-medium text-zinc-400">Previous days</h2>
+          <h2 className="mb-3 text-sm font-medium text-slate-500">Previous days</h2>
           {priorDays.length === 0 ? (
-            <p className="text-sm text-zinc-500">No previous days logged yet.</p>
+            <p className="text-sm text-slate-500">No previous days logged yet.</p>
           ) : (
             <ul className="flex max-h-[calc(100vh-8rem)] flex-col gap-3 overflow-y-auto pr-1">
               {priorDays.map(({ session: priorSession, entries }, index) => (
                 <li
                   key={`${priorSession.session_date}-${index}`}
-                  className="rounded-xl border border-white/10 bg-zinc-900/60 p-4 shadow-lg shadow-black/20 backdrop-blur-sm"
+                  className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
                 >
                   <div className="mb-2 flex items-center justify-between gap-2">
-                    <span className="font-medium text-zinc-100">{priorSession.track_name}</span>
-                    <span className="font-mono text-xs text-zinc-500">
+                    <span className="font-medium text-slate-900">{priorSession.track_name}</span>
+                    <span className="font-mono text-xs text-slate-400">
                       {priorSession.session_date}
                     </span>
                   </div>
@@ -250,13 +249,13 @@ function SpecFields({ values }: { values: Record<string, unknown> | null }) {
       </div>
 
       <div className={cardClass}>
-        <h2 className="mb-4 text-sm font-medium text-zinc-400">Seat position</h2>
+        <h2 className="mb-4 text-sm font-medium text-slate-500">Seat position</h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label htmlFor="seatPositionA" className={labelClass}>
               A
             </label>
-            <p className="mb-1.5 text-xs text-zinc-500">
+            <p className="mb-1.5 text-xs text-slate-400">
               Distance above/below bottom of chassis rail
             </p>
             <input
@@ -271,7 +270,7 @@ function SpecFields({ values }: { values: Record<string, unknown> | null }) {
             <label htmlFor="seatPositionB" className={labelClass}>
               B
             </label>
-            <p className="mb-1.5 text-xs text-zinc-500">
+            <p className="mb-1.5 text-xs text-slate-400">
               Measured at 45° angle from axle to seat back
             </p>
             <input

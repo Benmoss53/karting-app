@@ -3,17 +3,17 @@
 import { useMemo, useRef, useState, type PointerEvent } from "react";
 import type { TracePoint } from "@/lib/aim-csv";
 
-// Validated (dark-mode, categorical, adjacent-pairlist) palette — see the
+// Validated (light-mode, categorical, adjacent-pairlist) palette — see the
 // dataviz skill. Fixed order, never cycled: at most 8 laps compared at once.
 const PALETTE = [
-  "#3987e5", // blue
-  "#d95926", // orange
-  "#199e70", // aqua
-  "#c98500", // yellow
-  "#d55181", // magenta
+  "#2a78d6", // blue
+  "#eb6834", // orange
+  "#1baf7a", // aqua
+  "#eda100", // yellow
+  "#e87ba4", // magenta
   "#008300", // green
-  "#9085e9", // violet
-  "#e66767", // red
+  "#4a3aa7", // violet
+  "#e34948", // red
 ];
 
 const MAX_VISIBLE = 8;
@@ -206,7 +206,7 @@ export default function SpeedDistanceChart({ laps }: { laps: LapTrace[] }) {
 
   if (lapsWithData.length === 0) {
     return (
-      <p className="text-sm text-zinc-500">
+      <p className="text-sm text-slate-500">
         No GPS distance/speed data available to chart for this file.
       </p>
     );
@@ -228,17 +228,17 @@ export default function SpeedDistanceChart({ laps }: { laps: LapTrace[] }) {
               className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${
                 isVisible
                   ? "ring-1 ring-inset"
-                  : "bg-white/5 text-zinc-500 ring-1 ring-inset ring-white/10 hover:text-zinc-300"
+                  : "bg-slate-100 text-slate-500 ring-1 ring-inset ring-slate-200 hover:text-slate-700"
               } ${disabled ? "cursor-not-allowed opacity-40" : ""}`}
               style={
                 isVisible
-                  ? { backgroundColor: `${color}22`, color, boxShadow: `inset 0 0 0 1px ${color}55` }
+                  ? { backgroundColor: `${color}1a`, color, boxShadow: `inset 0 0 0 1px ${color}55` }
                   : undefined
               }
             >
               <span
                 className="h-2 w-2 rounded-full"
-                style={{ backgroundColor: isVisible ? color : "#71717a" }}
+                style={{ backgroundColor: isVisible ? color : "#94a3b8" }}
               />
               Lap {lap.lap}
             </button>
@@ -246,7 +246,7 @@ export default function SpeedDistanceChart({ laps }: { laps: LapTrace[] }) {
         })}
       </div>
       {visible.size >= MAX_VISIBLE && (
-        <p className="mb-3 text-xs text-zinc-500">
+        <p className="mb-3 text-xs text-slate-500">
           Comparing {MAX_VISIBLE} laps at once (the most that stay clearly distinguishable).
           Deselect one to add another.
         </p>
@@ -265,7 +265,7 @@ export default function SpeedDistanceChart({ laps }: { laps: LapTrace[] }) {
 
           return (
             <div key={channel.key} className={channelIdx > 0 ? "mt-1" : undefined}>
-              <p className="mb-1 text-xs font-medium text-zinc-500">{channel.label}</p>
+              <p className="mb-1 text-xs font-medium text-slate-500">{channel.label}</p>
               <svg viewBox={`0 0 ${WIDTH} ${CHART_HEIGHT}`} className="w-full">
                 {channel.ticks.map((tick) => (
                   <g key={tick}>
@@ -274,7 +274,7 @@ export default function SpeedDistanceChart({ laps }: { laps: LapTrace[] }) {
                       x2={WIDTH - PAD.right}
                       y1={yScale(tick)}
                       y2={yScale(tick)}
-                      stroke="#2c2c2a"
+                      stroke="#e1e0d9"
                       strokeWidth={1}
                     />
                     <text
@@ -329,7 +329,7 @@ export default function SpeedDistanceChart({ laps }: { laps: LapTrace[] }) {
                         cy={yScale(channel.accessor(last)!)}
                         r={4}
                         fill={color}
-                        stroke="#18181b"
+                        stroke="#ffffff"
                         strokeWidth={2}
                       />
                       {channel.showEndLabel && (
@@ -337,7 +337,7 @@ export default function SpeedDistanceChart({ laps }: { laps: LapTrace[] }) {
                           x={xScale(last.distanceM) + 6}
                           y={yScale(channel.accessor(last)!)}
                           fontSize={11}
-                          fill="#c3c2b7"
+                          fill="#52514e"
                           dy="0.32em"
                         >
                           {lap.lap}
@@ -364,8 +364,8 @@ export default function SpeedDistanceChart({ laps }: { laps: LapTrace[] }) {
       </div>
 
       {hoverReadouts.length > 0 && (
-        <div className="mt-2 rounded-lg border border-white/10 bg-zinc-950/80 p-3 text-xs">
-          <p className="mb-1.5 font-mono text-zinc-400">
+        <div className="mt-2 rounded-lg border border-slate-200 bg-white p-3 text-xs shadow-sm">
+          <p className="mb-1.5 font-mono text-slate-500">
             {Math.round(hoverDistance ?? 0)}m into lap
           </p>
           <div className="flex flex-col gap-1">
@@ -373,16 +373,16 @@ export default function SpeedDistanceChart({ laps }: { laps: LapTrace[] }) {
               <div key={r.lap} className="flex flex-wrap items-center gap-x-3 gap-y-1">
                 <span className="flex items-center gap-2">
                   <span className="h-0.5 w-4" style={{ backgroundColor: r.color }} />
-                  <span className="text-zinc-400">Lap {r.lap}</span>
+                  <span className="text-slate-500">Lap {r.lap}</span>
                 </span>
-                <span className="font-mono font-semibold text-zinc-100">
+                <span className="font-mono font-semibold text-slate-900">
                   {r.point!.speedKmh.toFixed(1)} km/h
                 </span>
                 {r.point!.rpm != null && (
-                  <span className="font-mono text-zinc-300">{Math.round(r.point!.rpm)} rpm</span>
+                  <span className="font-mono text-slate-700">{Math.round(r.point!.rpm)} rpm</span>
                 )}
                 {r.point!.lambda != null && (
-                  <span className="font-mono text-zinc-300">{r.point!.lambda.toFixed(2)} λ</span>
+                  <span className="font-mono text-slate-700">{r.point!.lambda.toFixed(2)} λ</span>
                 )}
               </div>
             ))}
