@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import AiCoachChat from "@/components/ai-coach-chat";
 
 const DAY_TYPE_LABEL: Record<string, string> = {
   race_meeting: "Race meeting",
@@ -8,13 +9,27 @@ const DAY_TYPE_LABEL: Record<string, string> = {
 
 export default async function DashboardPage() {
   const supabase = await createClient();
-  const { data: sessions } = await supabase
-    .from("sessions")
-    .select("id, track_name, session_date, day_type")
-    .order("session_date", { ascending: false });
+  const [{ data: sessions }, { count: coachCount }] = await Promise.all([
+    supabase
+      .from("sessions")
+      .select("id, track_name, session_date, day_type")
+      .order("session_date", { ascending: false }),
+    supabase.from("coach_entries").select("id", { count: "exact", head: true }),
+  ]);
 
   return (
     <div>
+      <div className="mb-8 rounded-2xl border border-blue-400/20 bg-gradient-to-br from-blue-500/10 via-zinc-900/60 to-red-500/10 p-6 shadow-xl shadow-black/30 sm:p-8">
+        <h1 className="text-3xl font-bold tracking-tight text-zinc-50 sm:text-4xl">
+          Speak To Your AI Coach
+        </h1>
+        <p className="mt-2 mb-6 text-base text-zinc-400">
+          Ask about setup changes across every day you&apos;ve logged — setup sheets, weather,
+          and testing history all feed into the answer.
+        </p>
+        <AiCoachChat entryCount={coachCount ?? 0} />
+      </div>
+
       <div className="mb-8 flex items-center justify-between">
         <h1 className="text-2xl font-semibold tracking-tight text-zinc-50">
           Your test / race days
