@@ -24,7 +24,7 @@ export default function DeleteSessionButton({
       <input type="hidden" name="sessionId" value={sessionId} />
       <button
         type="submit"
-        className="text-sm font-medium text-slate-500 transition-colors hover:text-rose-600"
+        className="text-sm font-medium text-neutral-500 transition-colors hover:text-red-500"
       >
         Delete this day
       </button>

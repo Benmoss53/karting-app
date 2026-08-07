@@ -1,4 +1,5 @@
 import NewSessionForm from "@/components/new-session-form";
+import { errorBannerClass } from "@/lib/dark-ui";
 
 export default async function NewSessionPage({
   searchParams,
@@ -9,15 +10,9 @@ export default async function NewSessionPage({
 
   return (
     <div className="max-w-xl">
-      <h1 className="mb-6 text-2xl font-semibold tracking-tight text-slate-900">
-        Add a test / race day
-      </h1>
+      <h1 className="mb-6 text-2xl font-bold text-white sm:text-3xl">Add a test / race day</h1>
 
-      {params.error && (
-        <p className="mb-4 rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700 ring-1 ring-inset ring-rose-200">
-          {params.error}
-        </p>
-      )}
+      {params.error && <p className={`mb-4 ${errorBannerClass}`}>{params.error}</p>}
 
       <NewSessionForm />
     </div>

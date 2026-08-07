@@ -8,7 +8,7 @@ export default function SetupEntryLog({
   compact?: boolean;
 }) {
   if (entries.length === 0) {
-    return <p className="text-xs text-slate-400">No changes logged</p>;
+    return <p className="text-xs text-neutral-500">No changes logged</p>;
   }
 
   return (
@@ -16,18 +16,18 @@ export default function SetupEntryLog({
       {entries.map((entry, index) => (
         <li
           key={entry.id}
-          className={compact ? "" : "rounded-lg border border-slate-200 bg-slate-50 p-3"}
+          className={compact ? "" : "rounded-lg border border-neutral-800 bg-neutral-800/40 p-3"}
         >
-          <span className="text-xs font-medium text-slate-400">Change {index + 1}</span>
+          <span className="text-xs font-medium text-neutral-500">Change {index + 1}</span>
           {entry.computed_changes ? (
-            <p className="mt-0.5 text-xs text-rose-600">{entry.computed_changes as string}</p>
+            <p className="mt-0.5 text-xs text-red-400">{entry.computed_changes as string}</p>
           ) : (
-            <p className="mt-0.5 text-xs text-slate-400">No changes recorded</p>
+            <p className="mt-0.5 text-xs text-neutral-500">No changes recorded</p>
           )}
           {entry.feedback ? (
-            <p className="mt-0.5 text-xs text-slate-700">Felt: {entry.feedback as string}</p>
+            <p className="mt-0.5 text-xs text-neutral-300">Felt: {entry.feedback as string}</p>
           ) : (
-            <p className="mt-0.5 text-xs text-amber-600">Pending feedback</p>
+            <p className="mt-0.5 text-xs italic text-neutral-500">Pending feedback</p>
           )}
         </li>
       ))}

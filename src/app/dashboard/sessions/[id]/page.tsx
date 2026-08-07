@@ -2,11 +2,39 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import DeleteSessionButton from "@/components/delete-session-button";
+import { cardClass, pillClass } from "@/lib/dark-ui";
 
 const DAY_TYPE_LABEL: Record<string, string> = {
   race_meeting: "Race meeting",
   test_day: "Test day",
 };
+
+function WrenchIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden>
+      <path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L4 17v3h3l5.3-5.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2-2 2.5-2.5z" />
+    </svg>
+  );
+}
+
+function GaugeIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden>
+      <path d="M12 14l4-4" />
+      <path d="M4 15a8 8 0 1 1 16 0" />
+      <path d="M4 15h1M19 15h1M6 8l.7.7M18 8l-.7.7" />
+    </svg>
+  );
+}
+
+function FilmIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden>
+      <rect x="3" y="5" width="18" height="14" rx="2" />
+      <path d="M8 5v14M16 5v14M3 10h5M16 10h5M3 15h5M16 15h5" />
+    </svg>
+  );
+}
 
 export default async function SessionHubPage({
   params,
@@ -58,21 +86,21 @@ export default async function SessionHubPage({
         entryCount === 0
           ? "Not started"
           : `${entryCount} change${entryCount === 1 ? "" : "s"}${pendingFeedback ? " · feedback pending" : ""}`,
-      accent: "bg-blue-600",
+      Icon: WrenchIcon,
     },
     {
       href: `/dashboard/sessions/${id}/mychron`,
       title: "Upload MyChron Data",
       description: "Telemetry files for this day",
       status: mychronCount ? `${mychronCount} file${mychronCount === 1 ? "" : "s"}` : "No files yet",
-      accent: "bg-violet-600",
+      Icon: GaugeIcon,
     },
     {
       href: `/dashboard/sessions/${id}/videos`,
       title: "Video Library",
       description: "SmartyCam footage for this day",
       status: videoCount ? `${videoCount} file${videoCount === 1 ? "" : "s"}` : "No footage yet",
-      accent: "bg-amber-500",
+      Icon: FilmIcon,
     },
   ];
 
@@ -87,49 +115,42 @@ export default async function SessionHubPage({
 
   return (
     <div className="max-w-4xl">
-      <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
-        {session.track_name}
-      </h1>
-      <div className="mb-8 mt-2 flex flex-wrap items-center gap-2 text-sm text-slate-500">
+      <h1 className="text-2xl font-bold text-white sm:text-3xl">{session.track_name}</h1>
+      <div className="mb-8 mt-2 flex flex-wrap items-center gap-2 text-sm text-neutral-400">
         <span className="font-mono">{session.session_date}</span>
         {session.day_type && (
-          <span className="inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700 ring-1 ring-inset ring-slate-200">
-            {DAY_TYPE_LABEL[session.day_type] ?? session.day_type}
-          </span>
+          <span className={pillClass}>{DAY_TYPE_LABEL[session.day_type] ?? session.day_type}</span>
         )}
         {session.kart && <span className="font-mono">Kart: {session.kart}</span>}
         {session.motor && <span className="font-mono">Motor: {session.motor}</span>}
         {weatherChips.map((chip) => (
-          <span
-            key={chip}
-            className="inline-flex rounded-full bg-blue-50 px-2 py-0.5 font-mono text-xs font-medium capitalize text-blue-700 ring-1 ring-inset ring-blue-200"
-          >
+          <span key={chip} className={`${pillClass} capitalize`}>
             {chip}
           </span>
         ))}
       </div>
 
       {session.setup_notes && (
-        <div className="mb-8 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="mb-2 text-sm font-medium text-slate-500">Notes</h2>
-          <p className="whitespace-pre-wrap text-slate-900">{session.setup_notes}</p>
+        <div className={`mb-8 ${cardClass}`}>
+          <h2 className="mb-2 text-sm font-medium text-neutral-400">Notes</h2>
+          <p className="whitespace-pre-wrap text-white">{session.setup_notes}</p>
         </div>
       )}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        {menuItems.map((item) => (
+        {menuItems.map(({ href, title, description, status, Icon }) => (
           <Link
-            key={item.href}
-            href={item.href}
-            className="group flex flex-col rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-md active:translate-y-0"
+            key={href}
+            href={href}
+            className="group flex flex-col rounded-2xl border border-neutral-800 bg-neutral-900 p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-red-600/50 hover:shadow-md active:translate-y-0"
           >
-            <span className={`mb-3 h-8 w-8 rounded-lg ${item.accent}`} />
-            <span className="font-medium text-slate-900 group-hover:text-blue-700">
-              {item.title}
+            <span className="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-neutral-800 text-red-500">
+              <Icon className="h-5 w-5" />
             </span>
-            <span className="mt-1 text-sm text-slate-500">{item.description}</span>
-            <span className="mt-3 font-mono text-xs font-medium uppercase tracking-wide text-slate-400">
-              {item.status}
+            <span className="font-semibold text-white">{title}</span>
+            <span className="mt-1 text-sm text-neutral-400">{description}</span>
+            <span className="mt-3 font-mono text-xs font-medium uppercase tracking-wide text-neutral-500">
+              {status}
             </span>
           </Link>
         ))}

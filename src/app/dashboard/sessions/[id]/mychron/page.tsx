@@ -7,9 +7,10 @@ import DeleteFileButton from "@/components/delete-file-button";
 import SpeedDistanceChart from "@/components/speed-distance-chart";
 import { analyzeTelemetryFile } from "../actions";
 import type { AimCsvSummary } from "@/lib/aim-csv";
+import { errorBannerClass, infoBannerClass, backLinkClass } from "@/lib/dark-ui";
 
 const FILE_TYPE_BADGE: Record<string, string> = {
-  mychron: "bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-200",
+  mychron: "bg-red-50 text-red-700 ring-1 ring-inset ring-red-200",
   other: "bg-slate-100 text-slate-700 ring-1 ring-inset ring-slate-200",
 };
 
@@ -77,23 +78,14 @@ export default async function MyChronDataPage({
 
   return (
     <div className="max-w-4xl">
-      <Link
-        href={`/dashboard/sessions/${id}`}
-        className="mb-4 inline-block text-sm font-medium text-blue-600 hover:text-blue-700"
-      >
+      <Link href={`/dashboard/sessions/${id}`} className={backLinkClass}>
         ← {session.track_name}
       </Link>
-      <h1 className="mb-6 text-2xl font-semibold tracking-tight text-slate-900">
-        Upload MyChron Data
-      </h1>
+      <h1 className="mb-6 text-2xl font-bold text-white sm:text-3xl">Upload MyChron Data</h1>
 
-      {error && (
-        <p className="mb-4 rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700 ring-1 ring-inset ring-rose-200">
-          {error}
-        </p>
-      )}
+      {error && <p className={`mb-4 ${errorBannerClass}`}>{error}</p>}
 
-      <div className="mb-6 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="mb-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         {filesWithLinks.length === 0 ? (
           <p className="text-sm text-slate-500">No files uploaded yet.</p>
         ) : (
@@ -115,7 +107,7 @@ export default async function MyChronDataPage({
                     {file.downloadUrl ? (
                       <a
                         href={file.downloadUrl}
-                        className="text-sm font-medium text-blue-600 hover:text-blue-700"
+                        className="text-sm font-medium text-red-600 hover:text-red-700"
                       >
                         Download
                       </a>
@@ -138,7 +130,7 @@ export default async function MyChronDataPage({
                     <input type="hidden" name="fileId" value={file.id} />
                     <button
                       type="submit"
-                      className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition-colors hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700"
+                      className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition-colors hover:border-red-300 hover:bg-red-50 hover:text-red-700"
                     >
                       Analyze
                     </button>
@@ -150,7 +142,7 @@ export default async function MyChronDataPage({
         )}
       </div>
 
-      <p className="mb-6 rounded-lg bg-blue-50 px-3 py-2 text-sm text-blue-700 ring-1 ring-inset ring-blue-200">
+      <p className={`mb-6 ${infoBannerClass}`}>
         Analysis works from a RaceStudio3 CSV export, not the raw MyChron file — export via{" "}
         <span className="font-mono">File → Export → CSV</span> in RaceStudio3, then upload and
         click Analyze.
@@ -223,7 +215,7 @@ function AnalysisSummary({ summary }: { summary: AimCsvSummary }) {
 
       {summary.laps.length > 0 && (
         <details className="mt-4">
-          <summary className="cursor-pointer text-sm font-medium text-blue-600 hover:text-blue-700">
+          <summary className="cursor-pointer text-sm font-medium text-red-600 hover:text-red-700">
             Lap breakdown ({summary.laps.length} laps)
           </summary>
           <div className="mt-3 overflow-x-auto">

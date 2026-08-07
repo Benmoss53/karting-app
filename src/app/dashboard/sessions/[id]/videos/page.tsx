@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { BUCKET_BY_TYPE } from "@/lib/storage";
 import UploadForm from "@/components/upload-form";
+import { backLinkClass } from "@/lib/dark-ui";
 
 export default async function VideoLibraryPage({
   params,
@@ -44,17 +45,12 @@ export default async function VideoLibraryPage({
 
   return (
     <div className="max-w-2xl">
-      <Link
-        href={`/dashboard/sessions/${id}`}
-        className="mb-4 inline-block text-sm font-medium text-blue-600 hover:text-blue-700"
-      >
+      <Link href={`/dashboard/sessions/${id}`} className={backLinkClass}>
         ← {session.track_name}
       </Link>
-      <h1 className="mb-6 text-2xl font-semibold tracking-tight text-slate-900">
-        Video Library
-      </h1>
+      <h1 className="mb-6 text-2xl font-bold text-white sm:text-3xl">Video Library</h1>
 
-      <div className="mb-6 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="mb-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         {filesWithLinks.length === 0 ? (
           <p className="text-sm text-slate-500">No footage uploaded yet.</p>
         ) : (
@@ -68,7 +64,7 @@ export default async function VideoLibraryPage({
                 {file.downloadUrl ? (
                   <a
                     href={file.downloadUrl}
-                    className="text-sm font-medium text-blue-600 hover:text-blue-700"
+                    className="text-sm font-medium text-red-600 hover:text-red-700"
                   >
                     Download
                   </a>
