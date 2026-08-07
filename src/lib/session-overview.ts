@@ -1,6 +1,5 @@
 import type { createClient } from "@/lib/supabase/server";
-import type { AimCsvSummary } from "@/lib/aim-csv";
-import { bestLapFromSummaries } from "@/lib/best-lap";
+import { formatLapSeconds } from "@/lib/best-lap";
 
 type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
 
@@ -15,9 +14,13 @@ export type SessionOverview = {
 
 /**
  * Sessions for the current driver, newest first, each annotated with its
- * best lap (drawn from any analyzed MyChron files) and its chronological
- * session number. Shared between the dashboard home and the full sessions
- * list so both stay in sync.
+ * best lap and its chronological session number. Shared between the
+ * dashboard home and the full sessions list so both stay in sync.
+ *
+ * Best lap is read from the small `best_lap_seconds` column on
+ * telemetry_analysis rather than the full stored summary — the summary
+ * includes every lap's speed/RPM/lambda trace, which would be a lot of
+ * data to ship for every session just to find one number.
  */
 export async function loadSessionsOverview(
   supabase: SupabaseServerClient,
@@ -40,21 +43,23 @@ export async function loadSessionsOverview(
   const { data: analyses } = fileIds.length
     ? await supabase
         .from("telemetry_analysis")
-        .select("telemetry_file_id, summary")
+        .select("telemetry_file_id, best_lap_seconds")
         .in("telemetry_file_id", fileIds)
-    : { data: [] as { telemetry_file_id: string; summary: AimCsvSummary }[] };
+        .not("best_lap_seconds", "is", null)
+    : { data: [] as { telemetry_file_id: string; best_lap_seconds: number }[] };
 
-  const summaryByFileId = new Map(
-    (analyses ?? []).map((a) => [a.telemetry_file_id as string, a.summary as AimCsvSummary]),
+  const bestLapSecondsByFileId = new Map(
+    (analyses ?? []).map((a) => [a.telemetry_file_id as string, a.best_lap_seconds as number]),
   );
 
-  const summariesBySession = new Map<string, AimCsvSummary[]>();
+  const bestLapSecondsBySession = new Map<string, number>();
   for (const file of files ?? []) {
-    const summary = summaryByFileId.get(file.id);
-    if (!summary) continue;
-    const list = summariesBySession.get(file.session_id) ?? [];
-    list.push(summary);
-    summariesBySession.set(file.session_id, list);
+    const seconds = bestLapSecondsByFileId.get(file.id);
+    if (seconds == null) continue;
+    const current = bestLapSecondsBySession.get(file.session_id);
+    if (current === undefined || seconds < current) {
+      bestLapSecondsBySession.set(file.session_id, seconds);
+    }
   }
 
   // Number sessions chronologically (Session 1 = earliest), independent of
@@ -64,9 +69,12 @@ export async function loadSessionsOverview(
   );
   const sessionNumber = new Map(chronological.map((s, index) => [s.id, index + 1]));
 
-  return sessions.map((session) => ({
-    ...session,
-    bestLap: bestLapFromSummaries(summariesBySession.get(session.id) ?? []),
-    sessionNumber: sessionNumber.get(session.id) ?? 0,
-  }));
+  return sessions.map((session) => {
+    const bestLapSeconds = bestLapSecondsBySession.get(session.id);
+    return {
+      ...session,
+      bestLap: bestLapSeconds === undefined ? null : formatLapSeconds(bestLapSeconds),
+      sessionNumber: sessionNumber.get(session.id) ?? 0,
+    };
+  });
 }

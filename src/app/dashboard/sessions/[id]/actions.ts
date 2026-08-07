@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { BUCKET_BY_TYPE } from "@/lib/storage";
 import { parseAimCsv, summarizeAimCsv } from "@/lib/aim-csv";
 import { SETUP_SHEET_FIELDS, diffSetupSheets } from "@/lib/setup-sheet";
+import { bestLapSecondsFromSummary } from "@/lib/best-lap";
 
 function textOrNull(formData: FormData, key: string) {
   const value = formData.get(key);
@@ -205,7 +206,7 @@ export async function analyzeTelemetryFile(formData: FormData) {
   }
 
   const { error: upsertError } = await supabase.from("telemetry_analysis").upsert(
-    { telemetry_file_id: fileId, summary },
+    { telemetry_file_id: fileId, summary, best_lap_seconds: bestLapSecondsFromSummary(summary) },
     { onConflict: "telemetry_file_id" },
   );
 
