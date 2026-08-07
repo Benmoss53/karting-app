@@ -36,17 +36,22 @@ export default function AiCoachChat({ entryCount }: { entryCount: number }) {
   }
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-      <h2 className="text-lg font-semibold tracking-tight text-slate-900 sm:text-xl">
-        Speak to your AI coach
-      </h2>
-      <p className="mt-1.5 mb-6 text-sm text-slate-500">
-        Ask about setup changes across every day you&apos;ve logged — setup sheets, weather, and
-        how the kart felt all feed into the answer.
-      </p>
-      <div className="mb-5 flex min-h-[100px] flex-col gap-3">
+    <div className="rounded-2xl border border-neutral-800 bg-gradient-to-b from-red-950/20 to-neutral-900 p-5 shadow-sm">
+      <div className="mb-4 flex items-center gap-3">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-600">
+          <svg viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5 text-white" aria-hidden>
+            <path d="M12 2l1.8 5.6L19 9l-5.2 1.4L12 16l-1.8-5.6L5 9l5.2-1.4L12 2z" />
+          </svg>
+        </span>
+        <div>
+          <p className="text-sm font-semibold tracking-wide text-white">AI ASSISTANT</p>
+          <p className="text-xs text-neutral-500">Your karting co-pilot</p>
+        </div>
+      </div>
+
+      <div className="mb-4 flex min-h-[100px] flex-col gap-3">
         {messages.length === 0 ? (
-          <p className="text-base text-slate-500">
+          <p className="text-sm text-neutral-400">
             {entryCount > 0
               ? `You have feedback logged for ${entryCount} ${
                   entryCount === 1 ? "day" : "days"
@@ -57,10 +62,10 @@ export default function AiCoachChat({ entryCount }: { entryCount: number }) {
           messages.map((message, index) => (
             <div
               key={index}
-              className={`max-w-[85%] animate-[fadeIn_0.2s_ease-out] rounded-xl px-4 py-3 text-base leading-relaxed ${
+              className={`max-w-[85%] animate-[fadeIn_0.2s_ease-out] rounded-xl px-4 py-3 text-sm leading-relaxed ${
                 message.role === "user"
-                  ? "self-end bg-blue-600 text-white shadow-sm"
-                  : "self-start bg-slate-100 text-slate-900 ring-1 ring-inset ring-slate-200"
+                  ? "self-end bg-red-600 text-white shadow-sm"
+                  : "self-start bg-neutral-800 text-neutral-100"
               }`}
             >
               {message.text}
@@ -68,29 +73,36 @@ export default function AiCoachChat({ entryCount }: { entryCount: number }) {
           ))
         )}
         {pending && (
-          <div className="self-start rounded-xl bg-slate-100 px-4 py-3 text-base text-slate-500 ring-1 ring-inset ring-slate-200">
+          <div className="self-start rounded-xl bg-neutral-800 px-4 py-3 text-sm text-neutral-400">
             Thinking…
           </div>
         )}
       </div>
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-3 sm:flex-row">
+      <form onSubmit={handleSubmit} className="flex items-center gap-2">
         <input
           type="text"
           value={input}
           onChange={(event) => setInput(event.target.value)}
-          placeholder="e.g. Should I add more camber for a wet track?"
+          placeholder="Ask anything…"
           disabled={pending}
-          className="flex-1 rounded-xl border border-slate-300 bg-slate-50 px-4 py-3.5 text-base text-slate-900 shadow-sm transition-colors focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-60"
+          className="flex-1 rounded-full border border-neutral-700 bg-neutral-800/80 px-4 py-3 text-sm text-white placeholder:text-neutral-500 shadow-sm transition-colors focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500 disabled:opacity-60"
         />
         <button
           type="submit"
           disabled={pending}
-          className="inline-flex items-center justify-center rounded-xl bg-blue-600 px-6 py-3.5 text-base font-semibold text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-white active:scale-[0.98] disabled:opacity-60 disabled:hover:scale-100"
+          aria-label="Ask the coach"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-red-600 text-white shadow-sm transition-all duration-200 hover:scale-[1.05] hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-neutral-900 active:scale-[0.95] disabled:opacity-60 disabled:hover:scale-100"
         >
-          {pending ? "Asking…" : "Ask the coach"}
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden>
+            <path d="M22 2L11 13" />
+            <path d="M22 2l-7 20-4-9-9-4 20-7z" />
+          </svg>
         </button>
       </form>
+      <p className="mt-2 text-center text-[11px] text-neutral-600">
+        AI can make mistakes. Verify important info.
+      </p>
     </div>
   );
 }

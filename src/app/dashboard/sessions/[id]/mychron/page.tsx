@@ -76,7 +76,7 @@ export default async function MyChronDataPage({
   );
 
   return (
-    <div className="max-w-4xl">
+    <div className="max-w-4xl rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm sm:p-8">
       <Link
         href={`/dashboard/sessions/${id}`}
         className="mb-4 inline-block text-sm font-medium text-blue-600 hover:text-blue-700"

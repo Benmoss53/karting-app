@@ -1,136 +1,81 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import AiCoachChat from "@/components/ai-coach-chat";
-import SetupEntryLog from "@/components/setup-entry-log";
-import { SETUP_SHEET_FIELDS } from "@/lib/setup-sheet";
+import SessionCard from "@/components/session-card";
+import { loadSessionsOverview } from "@/lib/session-overview";
 
-const DAY_TYPE_LABEL: Record<string, string> = {
-  race_meeting: "Race meeting",
-  test_day: "Test day",
-};
-
-type Entry = Record<string, unknown> & { id: string; session_id: string };
+function greetingForHour(hour: number) {
+  if (hour < 5) return "Good night";
+  if (hour < 12) return "Good morning";
+  if (hour < 18) return "Good afternoon";
+  return "Good evening";
+}
 
 export default async function DashboardPage() {
   const supabase = await createClient();
-  const [{ data: sessions }, { count: feedbackCount }, { data: setupEntries }] = await Promise.all([
-    supabase
-      .from("sessions")
-      .select("id, track_name, session_date, day_type")
-      .order("session_date", { ascending: false }),
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const [{ data: driver }, { count: feedbackCount }, sessions] = await Promise.all([
+    user ? supabase.from("drivers").select("full_name").eq("id", user.id).maybeSingle() : Promise.resolve({ data: null }),
     supabase
       .from("setup_sheets")
       .select("id", { count: "exact", head: true })
       .not("feedback", "is", null),
-    supabase.from("setup_sheets").select("*").order("created_at", { ascending: true }),
+    loadSessionsOverview(supabase),
   ]);
 
-  const entriesBySession = new Map<string, Entry[]>();
-  for (const row of (setupEntries ?? []) as Entry[]) {
-    const list = entriesBySession.get(row.session_id) ?? [];
-    list.push(row);
-    entriesBySession.set(row.session_id, list);
-  }
-
-  // Number sessions chronologically (Session 1 = earliest), independent of
-  // the newest-first display order below.
-  const chronological = [...(sessions ?? [])].sort((a, b) =>
-    a.session_date.localeCompare(b.session_date),
-  );
-  const sessionNumber = new Map(chronological.map((s, index) => [s.id, index + 1]));
+  const firstName = driver?.full_name?.trim().split(" ")[0] || user?.email?.split("@")[0] || "there";
+  const greeting = greetingForHour(new Date().getHours());
 
   return (
-    <div className="flex flex-col gap-10">
-      <AiCoachChat entryCount={feedbackCount ?? 0} />
+    <div className="flex flex-col gap-10 lg:flex-row lg:items-start lg:gap-6">
+      <div className="min-w-0 flex-1">
+        <h1 className="text-2xl font-bold text-white sm:text-3xl">
+          {greeting}, {firstName} <span aria-hidden>👋</span>
+        </h1>
+        <p className="mt-1 text-sm text-neutral-400">
+          Your karting data. Smarter insights. Faster laps.
+        </p>
 
-      <div>
-        <div className="mb-6 flex items-center justify-between">
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
-            Your test / race days
-          </h1>
-          <Link
-            href="/dashboard/new"
-            className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-white active:scale-[0.98]"
-          >
-            Add a day
-          </Link>
-        </div>
+        <div className="mt-8">
+          <h2 className="text-xs font-semibold tracking-widest text-neutral-300">SESSIONS</h2>
+          <span className="mt-1.5 block h-1 w-8 rounded-full bg-red-600" />
 
-        {!sessions || sessions.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-16 text-center shadow-sm">
-            <p className="text-slate-500">
-              No days logged yet. Add one to start uploading telemetry.
-            </p>
+          <div className="mt-4 flex flex-col gap-3">
+            {sessions.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-neutral-800 bg-neutral-900 px-6 py-16 text-center">
+                <p className="text-neutral-500">
+                  No days logged yet. Add one to start uploading telemetry.
+                </p>
+              </div>
+            ) : (
+              sessions.map((session, index) => (
+                <SessionCard key={session.id} session={session} highlighted={index === 0} />
+              ))
+            )}
+
+            <Link
+              href="/dashboard/new"
+              className="flex items-center gap-4 rounded-2xl border border-dashed border-red-600/50 p-4 text-red-500 transition-colors hover:bg-red-600/5"
+            >
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-red-600/50">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="h-4 w-4" aria-hidden>
+                  <path d="M12 5v14M5 12h14" />
+                </svg>
+              </span>
+              <div>
+                <p className="font-semibold">Add Session</p>
+                <p className="text-sm text-red-500/70">Log a new session</p>
+              </div>
+            </Link>
           </div>
-        ) : (
-          <ul className="flex flex-col gap-4">
-            {sessions.map((session) => {
-              const entries = entriesBySession.get(session.id) ?? [];
-              const latestEntry = entries[entries.length - 1];
-              const filledFields = SETUP_SHEET_FIELDS.filter(({ key }) => latestEntry?.[key]);
+        </div>
+      </div>
 
-              return (
-                <li key={session.id}>
-                  <details className="group rounded-2xl border border-slate-200 bg-white shadow-sm open:border-blue-300">
-                    <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-6 py-5 [&::-webkit-details-marker]:hidden">
-                      <span className="flex min-w-0 items-center gap-3">
-                        <span
-                          aria-hidden
-                          className="inline-block shrink-0 text-slate-400 transition-transform duration-200 group-open:rotate-90"
-                        >
-                          ▸
-                        </span>
-                        <span className="flex min-w-0 flex-col">
-                          <span className="truncate text-base font-semibold text-slate-900">
-                            {session.track_name}
-                          </span>
-                          <span className="mt-0.5 font-mono text-xs text-slate-400">
-                            {session.session_date} · Session {sessionNumber.get(session.id)}
-                          </span>
-                        </span>
-                      </span>
-                      {session.day_type && (
-                        <span className="inline-flex shrink-0 items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600 ring-1 ring-inset ring-slate-200">
-                          {DAY_TYPE_LABEL[session.day_type] ?? session.day_type}
-                        </span>
-                      )}
-                    </summary>
-
-                    <div className="border-t border-slate-200 px-6 py-5">
-                      {latestEntry ? (
-                        <>
-                          {filledFields.length > 0 && (
-                            <dl className="mb-4 grid grid-cols-2 gap-x-4 gap-y-3 text-sm sm:grid-cols-3">
-                              {filledFields.map(({ label, key }) => (
-                                <div key={key}>
-                                  <dt className="text-xs text-slate-400">{label}</dt>
-                                  <dd className="font-mono text-slate-700">
-                                    {latestEntry[key] as string}
-                                  </dd>
-                                </div>
-                              ))}
-                            </dl>
-                          )}
-                          <SetupEntryLog entries={entries} compact />
-                        </>
-                      ) : (
-                        <p className="text-sm text-slate-500">
-                          No setup sheet saved for this day yet.
-                        </p>
-                      )}
-                      <Link
-                        href={`/dashboard/sessions/${session.id}`}
-                        className="mt-4 inline-block text-sm font-medium text-blue-600 hover:text-blue-700"
-                      >
-                        Open day →
-                      </Link>
-                    </div>
-                  </details>
-                </li>
-              );
-            })}
-          </ul>
-        )}
+      <div className="lg:w-[380px] lg:shrink-0">
+        <AiCoachChat entryCount={feedbackCount ?? 0} />
       </div>
     </div>
   );

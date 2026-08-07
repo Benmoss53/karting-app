@@ -99,7 +99,7 @@ export default async function SetupSheetPage({
   }
 
   return (
-    <div className="max-w-5xl">
+    <div className="max-w-5xl rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm sm:p-8">
       <Link
         href={`/dashboard/sessions/${id}`}
         className="mb-4 inline-block text-sm font-medium text-blue-600 hover:text-blue-700"

@@ -86,7 +86,7 @@ export default async function SessionHubPage({
     : [];
 
   return (
-    <div className="max-w-4xl">
+    <div className="max-w-4xl rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm sm:p-8">
       <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
         {session.track_name}
       </h1>

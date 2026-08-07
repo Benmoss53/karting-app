@@ -8,7 +8,7 @@ export default async function NewSessionPage({
   const params = await searchParams;
 
   return (
-    <div className="max-w-xl">
+    <div className="max-w-xl rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm sm:p-8">
       <h1 className="mb-6 text-2xl font-semibold tracking-tight text-slate-900">
         Add a test / race day
       </h1>
