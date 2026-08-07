@@ -36,7 +36,14 @@ export default function AiCoachChat({ entryCount }: { entryCount: number }) {
   }
 
   return (
-    <div className="rounded-2xl border border-blue-100 bg-white p-6 shadow-sm sm:p-8">
+    <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+      <h2 className="text-lg font-semibold tracking-tight text-slate-900 sm:text-xl">
+        Speak to your AI coach
+      </h2>
+      <p className="mt-1.5 mb-6 text-sm text-slate-500">
+        Ask about setup changes across every day you&apos;ve logged — setup sheets, weather, and
+        how the kart felt all feed into the answer.
+      </p>
       <div className="mb-5 flex min-h-[100px] flex-col gap-3">
         {messages.length === 0 ? (
           <p className="text-base text-slate-500">
