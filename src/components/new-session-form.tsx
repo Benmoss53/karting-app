@@ -2,11 +2,7 @@
 
 import { useState } from "react";
 import { createSession, getWeatherSuggestion } from "@/app/dashboard/actions";
-
-const inputClass =
-  "w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 shadow-sm transition-colors focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500";
-const labelClass = "mb-1.5 block text-sm font-medium text-slate-700";
-const cardClass = "rounded-xl border border-slate-200 bg-white p-6 shadow-sm";
+import { cardClass, inputClass, labelClass, primaryButtonClass, secondaryButtonClass } from "@/lib/dark-ui";
 
 type AutofillStatus =
   | { state: "idle" }
@@ -38,7 +34,7 @@ export default function NewSessionForm() {
   return (
     <form action={createSession} className="flex flex-col gap-6">
       <div className={cardClass}>
-        <h2 className="mb-4 text-sm font-medium text-slate-500">Day info</h2>
+        <h2 className="mb-4 text-sm font-medium text-neutral-400">Day info</h2>
         <div className="flex flex-col gap-4">
           <div>
             <label htmlFor="trackName" className={labelClass}>
@@ -67,19 +63,14 @@ export default function NewSessionForm() {
                 type="date"
                 value={sessionDate}
                 onChange={(e) => setSessionDate(e.target.value)}
-                className={inputClass}
+                className={`${inputClass} [color-scheme:dark]`}
               />
             </div>
             <div>
               <label htmlFor="dayType" className={labelClass}>
                 Race meeting or test day
               </label>
-              <select
-                id="dayType"
-                name="dayType"
-                defaultValue="test_day"
-                className={inputClass}
-              >
+              <select id="dayType" name="dayType" defaultValue="test_day" className={inputClass}>
                 <option value="test_day">Test day</option>
                 <option value="race_meeting">Race meeting</option>
               </select>
@@ -91,13 +82,7 @@ export default function NewSessionForm() {
               <label htmlFor="kart" className={labelClass}>
                 Kart
               </label>
-              <input
-                id="kart"
-                name="kart"
-                type="text"
-                placeholder="e.g. Kart 2"
-                className={inputClass}
-              />
+              <input id="kart" name="kart" type="text" placeholder="e.g. Kart 2" className={inputClass} />
             </div>
             <div>
               <label htmlFor="motor" className={labelClass}>
@@ -117,21 +102,21 @@ export default function NewSessionForm() {
 
       <div className={cardClass}>
         <div className="mb-4 flex items-center justify-between gap-3">
-          <h2 className="text-sm font-medium text-slate-500">Weather conditions</h2>
+          <h2 className="text-sm font-medium text-neutral-400">Weather conditions</h2>
           <button
             type="button"
             onClick={handleAutofill}
             disabled={autofill.state === "loading" || !trackName.trim()}
-            className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition-colors hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-40"
+            className={secondaryButtonClass}
           >
             {autofill.state === "loading" ? "Looking up…" : "Auto-fill from track"}
           </button>
         </div>
         {autofill.state === "error" && (
-          <p className="mb-3 text-xs text-rose-600">{autofill.message}</p>
+          <p className="mb-3 text-xs text-red-400">{autofill.message}</p>
         )}
         {autofill.state === "done" && (
-          <p className="mb-3 text-xs text-blue-600">{autofill.message}</p>
+          <p className="mb-3 text-xs text-neutral-400">{autofill.message}</p>
         )}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
@@ -166,7 +151,7 @@ export default function NewSessionForm() {
           </div>
           <div>
             <label htmlFor="trackTemp" className={labelClass}>
-              Track temp <span className="font-normal text-slate-400">(optional)</span>
+              Track temp <span className="font-normal text-neutral-500">(optional)</span>
             </label>
             <input
               id="trackTemp"
@@ -197,7 +182,7 @@ export default function NewSessionForm() {
 
       <div className={cardClass}>
         <label htmlFor="setupNotes" className={labelClass}>
-          Notes <span className="font-normal text-slate-400">(optional)</span>
+          Notes <span className="font-normal text-neutral-500">(optional)</span>
         </label>
         <textarea
           id="setupNotes"
@@ -208,10 +193,7 @@ export default function NewSessionForm() {
         />
       </div>
 
-      <button
-        type="submit"
-        className="inline-flex items-center justify-center self-start rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-white active:scale-[0.98]"
-      >
+      <button type="submit" className={`self-start ${primaryButtonClass}`}>
         Add day
       </button>
     </form>
