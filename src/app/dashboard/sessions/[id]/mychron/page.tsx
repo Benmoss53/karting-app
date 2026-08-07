@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getAuthedUser } from "@/lib/supabase/user";
 import { BUCKET_BY_TYPE } from "@/lib/storage";
 import UploadForm from "@/components/upload-form";
 import DeleteFileButton from "@/components/delete-file-button";
@@ -28,10 +29,7 @@ export default async function MyChronDataPage({
   const { id } = await params;
   const { error } = await searchParams;
   const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthedUser();
 
   const { data: session } = await supabase
     .from("sessions")

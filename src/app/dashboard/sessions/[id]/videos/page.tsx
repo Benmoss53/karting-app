@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getAuthedUser } from "@/lib/supabase/user";
 import { BUCKET_BY_TYPE } from "@/lib/storage";
 import UploadForm from "@/components/upload-form";
 import { backLinkClass } from "@/lib/dark-ui";
@@ -12,10 +13,7 @@ export default async function VideoLibraryPage({
 }) {
   const { id } = await params;
   const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthedUser();
 
   const { data: session } = await supabase
     .from("sessions")
