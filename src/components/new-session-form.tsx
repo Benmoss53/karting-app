@@ -10,9 +10,53 @@ type AutofillStatus =
   | { state: "error"; message: string }
   | { state: "done"; message: string };
 
+const SESSION_TYPES = [
+  { value: "race_meeting", label: "Race", Icon: FlagIcon },
+  { value: "practice", label: "Practice", Icon: StopwatchIcon },
+  { value: "test_day", label: "Test", Icon: WrenchIcon },
+  { value: "other", label: "Other", Icon: DotsIcon },
+];
+
+function FlagIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden>
+      <path d="M5 3v18" />
+      <path d="M5 4h11l-2 4 2 4H5" />
+    </svg>
+  );
+}
+
+function StopwatchIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden>
+      <circle cx="12" cy="13" r="8" />
+      <path d="M12 13l3-3M9 2h6" />
+    </svg>
+  );
+}
+
+function WrenchIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden>
+      <path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L4 17v3h3l5.3-5.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2-2 2.5-2.5z" />
+    </svg>
+  );
+}
+
+function DotsIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden>
+      <circle cx="5" cy="12" r="1.6" />
+      <circle cx="12" cy="12" r="1.6" />
+      <circle cx="19" cy="12" r="1.6" />
+    </svg>
+  );
+}
+
 export default function NewSessionForm() {
   const [trackName, setTrackName] = useState("");
   const [sessionDate, setSessionDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [dayType, setDayType] = useState("test_day");
   const [temperature, setTemperature] = useState("");
   const [windy, setWindy] = useState("");
   const [skyConditions, setSkyConditions] = useState("");
@@ -52,6 +96,31 @@ export default function NewSessionForm() {
             />
           </div>
 
+          <div>
+            <label className={labelClass}>Session type</label>
+            <input type="hidden" name="dayType" value={dayType} />
+            <div className="grid grid-cols-4 gap-2">
+              {SESSION_TYPES.map(({ value, label, Icon }) => {
+                const active = dayType === value;
+                return (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setDayType(value)}
+                    className={`flex flex-col items-center gap-1.5 rounded-lg border px-2 py-3 text-xs font-medium transition-colors ${
+                      active
+                        ? "border-red-600 bg-red-600/10 text-red-400"
+                        : "border-neutral-700 bg-neutral-800/80 text-neutral-400 hover:border-neutral-600"
+                    }`}
+                  >
+                    <Icon className="h-5 w-5" />
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <label htmlFor="sessionDate" className={labelClass}>
@@ -67,13 +136,15 @@ export default function NewSessionForm() {
               />
             </div>
             <div>
-              <label htmlFor="dayType" className={labelClass}>
-                Race meeting or test day
+              <label htmlFor="sessionTime" className={labelClass}>
+                Start time <span className="font-normal text-neutral-500">(optional)</span>
               </label>
-              <select id="dayType" name="dayType" defaultValue="test_day" className={inputClass}>
-                <option value="test_day">Test day</option>
-                <option value="race_meeting">Race meeting</option>
-              </select>
+              <input
+                id="sessionTime"
+                name="sessionTime"
+                type="time"
+                className={`${inputClass} [color-scheme:dark]`}
+              />
             </div>
           </div>
 

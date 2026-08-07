@@ -6,7 +6,9 @@ import { cardClass, pillClass } from "@/lib/dark-ui";
 
 const DAY_TYPE_LABEL: Record<string, string> = {
   race_meeting: "Race meeting",
+  practice: "Practice",
   test_day: "Test day",
+  other: "Other",
 };
 
 function WrenchIcon({ className }: { className?: string }) {
