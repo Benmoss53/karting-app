@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getAuthedUser } from "@/lib/supabase/user";
 import { submitSetupEntry, updateSetupEntry, saveSetupFeedback } from "../actions";
 import { SETUP_SHEET_FIELDS } from "@/lib/setup-sheet";
 import SetupEntryLog from "@/components/setup-entry-log";
@@ -26,10 +27,7 @@ export default async function SetupSheetPage({
   const { id } = await params;
   const { error } = await searchParams;
   const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthedUser();
 
   const { data: session } = await supabase
     .from("sessions")

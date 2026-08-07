@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { getAuthedUser } from "@/lib/supabase/user";
 import AiCoachChat from "@/components/ai-coach-chat";
 import SessionCard from "@/components/session-card";
 import { loadSessionsOverview } from "@/lib/session-overview";
@@ -13,9 +14,7 @@ function greetingForHour(hour: number) {
 
 export default async function DashboardPage() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthedUser();
 
   const [{ data: driver }, { count: feedbackCount }, sessions] = await Promise.all([
     user ? supabase.from("drivers").select("full_name").eq("id", user.id).maybeSingle() : Promise.resolve({ data: null }),
