@@ -232,8 +232,12 @@ export async function deleteTelemetryFile(formData: FormData) {
 
   const sessionId = formData.get("sessionId") as string;
   const fileId = formData.get("fileId") as string;
+  // Callers (the session detail page, the MyChron page, the videos page)
+  // each want to land back where they started, not always on /mychron.
+  const redirectTo =
+    (formData.get("redirectTo") as string | null) || `/dashboard/sessions/${sessionId}`;
   const errorRedirect = (message: string) =>
-    redirect(`/dashboard/sessions/${sessionId}/mychron?error=${encodeURIComponent(message)}`);
+    redirect(`${redirectTo}?error=${encodeURIComponent(message)}`);
 
   const { data: file, error: fileError } = await supabase
     .from("telemetry_files")
@@ -256,8 +260,10 @@ export async function deleteTelemetryFile(formData: FormData) {
     return;
   }
 
+  revalidatePath(`/dashboard/sessions/${sessionId}`);
   revalidatePath(`/dashboard/sessions/${sessionId}/mychron`);
-  redirect(`/dashboard/sessions/${sessionId}/mychron`);
+  revalidatePath(`/dashboard/sessions/${sessionId}/videos`);
+  redirect(redirectTo);
 }
 
 export async function deleteSession(formData: FormData) {
