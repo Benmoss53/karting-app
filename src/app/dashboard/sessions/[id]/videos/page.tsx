@@ -56,18 +56,18 @@ export default async function VideoLibraryPage({
             {filesWithLinks.map((file) => (
               <li
                 key={file.id}
-                className="flex items-center justify-between py-3 first:pt-0 last:pb-0"
+                className="flex flex-col gap-1 py-3 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between sm:gap-2"
               >
-                <span className="text-slate-900">{file.file_name}</span>
+                <span className="min-w-0 truncate text-slate-900">{file.file_name}</span>
                 {file.downloadUrl ? (
                   <a
                     href={file.downloadUrl}
-                    className="text-sm font-medium text-red-600 hover:text-red-700"
+                    className="shrink-0 text-sm font-medium text-red-600 hover:text-red-700"
                   >
                     Download
                   </a>
                 ) : (
-                  <span className="text-sm text-slate-500">Unavailable</span>
+                  <span className="shrink-0 text-sm text-slate-500">Unavailable</span>
                 )}
               </li>
             ))}

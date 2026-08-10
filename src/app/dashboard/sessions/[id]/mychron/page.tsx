@@ -90,18 +90,18 @@ export default async function MyChronDataPage({
           <ul className="flex flex-col divide-y divide-slate-200">
             {filesWithLinks.map((file) => (
               <li key={file.id} className="py-3 first:pt-0 last:pb-0">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <span className="text-slate-900">{file.file_name}</span>
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <span className="truncate text-slate-900">{file.file_name}</span>
                     <span
-                      className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium uppercase tracking-wide ${
+                      className={`inline-flex shrink-0 rounded-full px-2 py-0.5 text-xs font-medium uppercase tracking-wide ${
                         FILE_TYPE_BADGE[file.file_type] ?? FILE_TYPE_BADGE.other
                       }`}
                     >
                       {file.file_type}
                     </span>
                   </div>
-                  <div className="flex items-center gap-4">
+                  <div className="flex shrink-0 items-center gap-4">
                     {file.downloadUrl ? (
                       <a
                         href={file.downloadUrl}
