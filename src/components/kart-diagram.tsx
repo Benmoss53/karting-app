@@ -27,6 +27,10 @@ function KartIllustration() {
       {/* floor tray, drawn first so the frame/seat sit on top of it */}
       <rect x={393} y={185} width={114} height={210} rx={14} stroke={strokeSoft} strokeWidth={1} opacity={0.45} />
 
+      {/* solid rear axle, drawn early so the sprocket/wheels sit on top of it */}
+      <line x1={278} y1={347} x2={622} y2={347} stroke={strokeSoft} strokeWidth={4} opacity={0.55} />
+      <circle cx={520} cy={347} r={6} stroke={strokeSoft} strokeWidth={1.5} opacity={0.8} />
+
       {/* bare tube spaceframe */}
       <g stroke={stroke} strokeWidth={2.5} strokeLinecap="round">
         {/* main side rails, front hoop to rear hoop */}
@@ -38,19 +42,22 @@ function KartIllustration() {
         {/* cross-bracing */}
         <line x1={340} y1={95} x2={560} y2={365} strokeWidth={1.5} opacity={0.6} />
         <line x1={560} y1={95} x2={340} y2={365} strokeWidth={1.5} opacity={0.6} />
-        {/* stub-axle arms out to each wheel hub */}
+        {/* front stub-axle arms (independent, unlike the solid rear axle) */}
         <line x1={305} y1={112} x2={278} y2={112} />
         <line x1={595} y1={112} x2={622} y2={112} />
-        <line x1={305} y1={347} x2={278} y2={347} />
-        <line x1={595} y1={347} x2={622} y2={347} />
       </g>
 
-      {/* nose cone */}
+      {/* front fairing */}
       <path
-        d="M 420 8 C 425 -2, 475 -2, 480 8 L 478 24 C 465 30, 435 30, 422 24 Z"
+        d="M 450 40 C 478 40, 498 56, 498 76 C 498 96, 478 112, 450 112
+           C 422 112, 402 96, 402 76 C 402 56, 422 40, 450 40 Z"
         stroke={stroke}
         strokeWidth={2}
       />
+      {/* steering rods (drag links) out to each front spindle */}
+      <line x1={436} y1={140} x2={300} y2={108} stroke={strokeSoft} strokeWidth={1.5} opacity={0.7} />
+      <line x1={464} y1={140} x2={600} y2={108} stroke={strokeSoft} strokeWidth={1.5} opacity={0.7} />
+
       {/* front bumper + stays */}
       <rect x={258} y={30} width={384} height={13} rx={6.5} stroke={stroke} strokeWidth={2} />
       <line x1={310} y1={43} x2={330} y2={68} stroke={strokeSoft} strokeWidth={1.5} />
@@ -88,31 +95,34 @@ function KartIllustration() {
       <path d="M 400 250 C 392 275, 392 315, 404 345" stroke={strokeSoft} strokeWidth={1} opacity={0.6} />
       <path d="M 500 250 C 508 275, 508 315, 496 345" stroke={strokeSoft} strokeWidth={1} opacity={0.6} />
 
-      {/* engine, sprockets, chain, exhaust — offset to one side like a real install */}
+      {/* engine + mount tabs, sprockets, chain, exhaust — offset to one side like a real install */}
       <rect x={470} y={330} width={58} height={44} rx={6} stroke={strokeSoft} strokeWidth={1.5} />
+      <line x1={478} y1={374} x2={478} y2={384} stroke={strokeSoft} strokeWidth={1.5} opacity={0.7} />
+      <line x1={520} y1={374} x2={520} y2={384} stroke={strokeSoft} strokeWidth={1.5} opacity={0.7} />
       <circle cx={499} cy={374} r={9} stroke={strokeSoft} strokeWidth={1.5} />
       <circle cx={585} cy={347} r={17} stroke={strokeSoft} strokeWidth={1.5} />
       <line x1={499} y1={365} x2={585} y2={352} stroke={strokeSoft} strokeWidth={1} opacity={0.6} />
       <line x1={499} y1={383} x2={585} y2={362} stroke={strokeSoft} strokeWidth={1} opacity={0.6} />
-      <path
-        d="M 470 345 C 430 345, 415 365, 415 410"
-        stroke={strokeSoft}
-        strokeWidth={2}
-        opacity={0.75}
-      />
+      {/* exhaust pipe sweeping back to a silencer canister */}
+      <path d="M 470 345 C 440 345, 428 358, 425 375" stroke={strokeSoft} strokeWidth={2} opacity={0.75} />
+      <rect x={410} y={374} width={30} height={34} rx={12} stroke={strokeSoft} strokeWidth={1.5} opacity={0.85} />
+
+      {/* fuel tank, opposite side from the silencer */}
+      <rect x={335} y={378} width={44} height={30} rx={10} stroke={strokeSoft} strokeWidth={1.5} opacity={0.85} />
 
       {/* side pods, streamlined */}
       <path d="M 300 178 L 340 185 L 340 268 L 300 275 C 292 250, 292 200, 300 178 Z" stroke={stroke} strokeWidth={2} />
       <path d="M 600 178 L 560 185 L 560 268 L 600 275 C 608 250, 608 200, 600 178 Z" stroke={stroke} strokeWidth={2} />
 
-      {/* wheels: tire + rim + brake disc */}
+      {/* wheels: tire + rim, brake disc on the rear pair only (most karts brake rear-only) */}
       {[
-        { x: 250, y: 52 },
-        { x: 595, y: 52 },
-        { x: 250, y: 288 },
-        { x: 595, y: 288 },
-      ].map(({ x, y }) => {
+        { x: 250, y: 52, braked: false },
+        { x: 595, y: 52, braked: false },
+        { x: 250, y: 288, braked: true },
+        { x: 595, y: 288, braked: true },
+      ].map(({ x, y, braked }) => {
         const innerSide = x < 400 ? "right" : "left";
+        const hubX = innerSide === "right" ? x + 42 : x + 13;
         return (
           <g key={`${x}-${y}`}>
             <rect x={x} y={y} width={55} height={118} rx={10} stroke={stroke} strokeWidth={2.5} />
@@ -126,15 +136,24 @@ function KartIllustration() {
               strokeWidth={1.5}
               opacity={0.8}
             />
-            <circle
-              cx={innerSide === "right" ? x + 42 : x + 13}
-              cy={y + 59}
-              r={12}
-              stroke={strokeSoft}
-              strokeWidth={1.5}
-              opacity={0.85}
-            />
-            <circle cx={innerSide === "right" ? x + 42 : x + 13} cy={y + 59} r={3} fill={strokeSoft} opacity={0.85} />
+            {braked ? (
+              <>
+                <circle cx={hubX} cy={y + 59} r={12} stroke={strokeSoft} strokeWidth={1.5} opacity={0.85} />
+                <circle cx={hubX} cy={y + 59} r={3} fill={strokeSoft} opacity={0.85} />
+                <rect
+                  x={innerSide === "right" ? hubX - 3 : hubX - 11}
+                  y={y + 50}
+                  width={14}
+                  height={18}
+                  rx={3}
+                  stroke={strokeSoft}
+                  strokeWidth={1.2}
+                  opacity={0.85}
+                />
+              </>
+            ) : (
+              <circle cx={hubX} cy={y + 59} r={6} stroke={strokeSoft} strokeWidth={1.5} opacity={0.85} />
+            )}
           </g>
         );
       })}
