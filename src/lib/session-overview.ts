@@ -39,17 +39,22 @@ export async function loadSessionsOverview(
     .eq("file_type", "mychron")
     .in("session_id", sessionIds);
 
+  type AnalysisRow = { telemetry_file_id: string; best_lap_seconds: number };
+
   const fileIds = (files ?? []).map((f) => f.id);
-  const { data: analyses } = fileIds.length
+  // Cast the whole ternary, not just the empty-array branch — the awaited
+  // query's untyped `any[]` result would otherwise collapse the union and
+  // silently drop the type for every downstream use of `analyses`.
+  const { data: analyses } = (fileIds.length
     ? await supabase
         .from("telemetry_analysis")
         .select("telemetry_file_id, best_lap_seconds")
         .in("telemetry_file_id", fileIds)
         .not("best_lap_seconds", "is", null)
-    : { data: [] as { telemetry_file_id: string; best_lap_seconds: number }[] };
+    : { data: [] as AnalysisRow[] }) as { data: AnalysisRow[] | null };
 
   const bestLapSecondsByFileId = new Map(
-    (analyses ?? []).map((a) => [a.telemetry_file_id as string, a.best_lap_seconds as number]),
+    (analyses ?? []).map((a) => [a.telemetry_file_id, a.best_lap_seconds]),
   );
 
   const bestLapSecondsBySession = new Map<string, number>();
