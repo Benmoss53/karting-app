@@ -252,21 +252,23 @@ export default function SpeedDistanceChart({ laps }: { laps: LapTrace[] }) {
         </p>
       )}
 
-      <div
-        ref={containerRef}
-        className="touch-none"
-        onPointerMove={handlePointerMove}
-        onPointerLeave={() => setHoverDistance(null)}
-      >
-        {channels.map((channel, channelIdx) => {
-          const isLast = channelIdx === channels.length - 1;
-          const span = channel.domain.max - channel.domain.min || 1;
-          const yScale = (v: number) => PAD.top + plotH - ((v - channel.domain.min) / span) * plotH;
+      <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+        <div
+          ref={containerRef}
+          className="touch-none"
+          style={{ minWidth: 600 }}
+          onPointerMove={handlePointerMove}
+          onPointerLeave={() => setHoverDistance(null)}
+        >
+          {channels.map((channel, channelIdx) => {
+            const isLast = channelIdx === channels.length - 1;
+            const span = channel.domain.max - channel.domain.min || 1;
+            const yScale = (v: number) => PAD.top + plotH - ((v - channel.domain.min) / span) * plotH;
 
-          return (
-            <div key={channel.key} className={channelIdx > 0 ? "mt-1" : undefined}>
-              <p className="mb-1 text-xs font-medium text-slate-500">{channel.label}</p>
-              <svg viewBox={`0 0 ${WIDTH} ${CHART_HEIGHT}`} className="w-full">
+            return (
+              <div key={channel.key} className={channelIdx > 0 ? "mt-1" : undefined}>
+                <p className="mb-1 text-xs font-medium text-slate-500">{channel.label}</p>
+                <svg viewBox={`0 0 ${WIDTH} ${CHART_HEIGHT}`} className="w-full">
                 {channel.ticks.map((tick) => (
                   <g key={tick}>
                     <line
@@ -361,6 +363,7 @@ export default function SpeedDistanceChart({ laps }: { laps: LapTrace[] }) {
             </div>
           );
         })}
+        </div>
       </div>
 
       {hoverReadouts.length > 0 && (
