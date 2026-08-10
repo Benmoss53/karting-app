@@ -93,19 +93,23 @@ export default async function SessionDetailPage({
   );
   const videoFiles = (files ?? []).filter((file) => file.file_type === "video");
 
+  type AnalysisRow = {
+    telemetry_file_id: string;
+    summary: AimCsvSummary;
+    best_lap_seconds: number | null;
+  };
+
   const fileIds = telemetryFiles.map((file) => file.id);
-  const { data: analyses } = fileIds.length
+  // Cast the whole ternary, not just the empty-array branch — otherwise the
+  // awaited query's untyped `any[]` result collapses the union and every
+  // downstream use of `analyses` silently loses its type (no generated
+  // Database types are wired up for the Supabase client in this project).
+  const { data: analyses } = (fileIds.length
     ? await supabase
         .from("telemetry_analysis")
         .select("telemetry_file_id, summary, best_lap_seconds")
         .in("telemetry_file_id", fileIds)
-    : {
-        data: [] as {
-          telemetry_file_id: string;
-          summary: AimCsvSummary;
-          best_lap_seconds: number | null;
-        }[],
-      };
+    : { data: [] as AnalysisRow[] }) as { data: AnalysisRow[] | null };
 
   const analysisByFileId = new Map((analyses ?? []).map((row) => [row.telemetry_file_id, row]));
 
