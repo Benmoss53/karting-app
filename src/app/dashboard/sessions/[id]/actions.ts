@@ -14,9 +14,9 @@ function textOrNull(formData: FormData, key: string) {
   return value.trim();
 }
 
-// The single most recent setup entry across every session the driver has
-// ever logged — this is the running "base" a new entry changes from,
-// regardless of which day it was logged on.
+// The single most recent setup entry across every run the driver has ever
+// logged, on any day — this is the running "base" a new entry changes
+// from, and the gate on submitting a new one.
 async function getLatestEntry(
   supabase: Awaited<ReturnType<typeof createClient>>,
   userId: string,
@@ -40,6 +40,85 @@ async function getLatestEntry(
   return data;
 }
 
+export async function createRun(formData: FormData) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  const sessionId = formData.get("sessionId") as string;
+
+  const { count } = await supabase
+    .from("runs")
+    .select("id", { count: "exact", head: true })
+    .eq("session_id", sessionId);
+
+  const { data: run, error } = await supabase
+    .from("runs")
+    .insert({ session_id: sessionId, run_number: (count ?? 0) + 1 })
+    .select("id")
+    .single();
+
+  if (error || !run) {
+    redirect(
+      `/dashboard/sessions/${sessionId}?error=${encodeURIComponent(error?.message ?? "Could not create a new session.")}`,
+    );
+    return;
+  }
+
+  revalidatePath(`/dashboard/sessions/${sessionId}`);
+  redirect(`/dashboard/sessions/${sessionId}/runs/${run.id}`);
+}
+
+export async function deleteRun(formData: FormData) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  const sessionId = formData.get("sessionId") as string;
+  const runId = formData.get("runId") as string;
+
+  const { data: files } = await supabase
+    .from("telemetry_files")
+    .select("storage_path, file_type")
+    .eq("run_id", runId);
+
+  if (files && files.length > 0) {
+    const pathsByBucket = new Map<string, string[]>();
+    for (const file of files) {
+      const bucket = BUCKET_BY_TYPE[file.file_type] ?? "telemetry";
+      const paths = pathsByBucket.get(bucket) ?? [];
+      paths.push(file.storage_path);
+      pathsByBucket.set(bucket, paths);
+    }
+    await Promise.all(
+      [...pathsByBucket.entries()].map(([bucket, paths]) =>
+        supabase.storage.from(bucket).remove(paths),
+      ),
+    );
+  }
+
+  const { error } = await supabase.from("runs").delete().eq("id", runId);
+
+  if (error) {
+    redirect(`/dashboard/sessions/${sessionId}?error=${encodeURIComponent(error.message)}`);
+  }
+
+  revalidatePath(`/dashboard/sessions/${sessionId}`);
+  redirect(`/dashboard/sessions/${sessionId}`);
+}
+
 export async function submitSetupEntry(formData: FormData) {
   const supabase = await createClient();
 
@@ -52,8 +131,11 @@ export async function submitSetupEntry(formData: FormData) {
   }
 
   const sessionId = formData.get("sessionId") as string;
+  const runId = formData.get("runId") as string;
   const errorRedirect = (message: string) =>
-    redirect(`/dashboard/sessions/${sessionId}/setup?error=${encodeURIComponent(message)}`);
+    redirect(
+      `/dashboard/sessions/${sessionId}/runs/${runId}?error=${encodeURIComponent(message)}`,
+    );
 
   const latestEntry = await getLatestEntry(supabase, user!.id);
 
@@ -73,6 +155,7 @@ export async function submitSetupEntry(formData: FormData) {
 
   const { error } = await supabase.from("setup_sheets").insert({
     session_id: sessionId,
+    run_id: runId,
     ...newValues,
     computed_changes: computedChanges,
   });
@@ -83,9 +166,9 @@ export async function submitSetupEntry(formData: FormData) {
   }
 
   revalidatePath(`/dashboard/sessions/${sessionId}`);
-  revalidatePath(`/dashboard/sessions/${sessionId}/setup`);
+  revalidatePath(`/dashboard/sessions/${sessionId}/runs/${runId}`);
   revalidatePath("/dashboard");
-  redirect(`/dashboard/sessions/${sessionId}/setup`);
+  redirect(`/dashboard/sessions/${sessionId}/runs/${runId}`);
 }
 
 export async function updateSetupEntry(formData: FormData) {
@@ -100,9 +183,12 @@ export async function updateSetupEntry(formData: FormData) {
   }
 
   const sessionId = formData.get("sessionId") as string;
+  const runId = formData.get("runId") as string;
   const entryId = formData.get("entryId") as string;
   const errorRedirect = (message: string) =>
-    redirect(`/dashboard/sessions/${sessionId}/setup?error=${encodeURIComponent(message)}`);
+    redirect(
+      `/dashboard/sessions/${sessionId}/runs/${runId}?error=${encodeURIComponent(message)}`,
+    );
 
   const newValues: Record<string, string | null> = {};
   for (const { name, key } of SETUP_SHEET_FIELDS) {
@@ -119,9 +205,9 @@ export async function updateSetupEntry(formData: FormData) {
   }
 
   revalidatePath(`/dashboard/sessions/${sessionId}`);
-  revalidatePath(`/dashboard/sessions/${sessionId}/setup`);
+  revalidatePath(`/dashboard/sessions/${sessionId}/runs/${runId}`);
   revalidatePath("/dashboard");
-  redirect(`/dashboard/sessions/${sessionId}/setup`);
+  redirect(`/dashboard/sessions/${sessionId}/runs/${runId}`);
 }
 
 export async function saveSetupFeedback(formData: FormData) {
@@ -136,6 +222,7 @@ export async function saveSetupFeedback(formData: FormData) {
   }
 
   const sessionId = formData.get("sessionId") as string;
+  const runId = formData.get("runId") as string;
   const entryId = formData.get("entryId") as string;
   const feedback = textOrNull(formData, "feedback");
 
@@ -146,14 +233,14 @@ export async function saveSetupFeedback(formData: FormData) {
 
   if (error) {
     redirect(
-      `/dashboard/sessions/${sessionId}/setup?error=${encodeURIComponent(error.message)}`,
+      `/dashboard/sessions/${sessionId}/runs/${runId}?error=${encodeURIComponent(error.message)}`,
     );
   }
 
   revalidatePath(`/dashboard/sessions/${sessionId}`);
-  revalidatePath(`/dashboard/sessions/${sessionId}/setup`);
+  revalidatePath(`/dashboard/sessions/${sessionId}/runs/${runId}`);
   revalidatePath("/dashboard");
-  redirect(`/dashboard/sessions/${sessionId}/setup`);
+  redirect(`/dashboard/sessions/${sessionId}/runs/${runId}`);
 }
 
 export async function analyzeTelemetryFile(formData: FormData) {
@@ -168,9 +255,12 @@ export async function analyzeTelemetryFile(formData: FormData) {
   }
 
   const sessionId = formData.get("sessionId") as string;
+  const runId = formData.get("runId") as string;
   const fileId = formData.get("fileId") as string;
   const errorRedirect = (message: string) =>
-    redirect(`/dashboard/sessions/${sessionId}/mychron?error=${encodeURIComponent(message)}`);
+    redirect(
+      `/dashboard/sessions/${sessionId}/runs/${runId}?error=${encodeURIComponent(message)}`,
+    );
 
   const { data: file, error: fileError } = await supabase
     .from("telemetry_files")
@@ -215,8 +305,8 @@ export async function analyzeTelemetryFile(formData: FormData) {
     return;
   }
 
-  revalidatePath(`/dashboard/sessions/${sessionId}/mychron`);
-  redirect(`/dashboard/sessions/${sessionId}/mychron`);
+  revalidatePath(`/dashboard/sessions/${sessionId}/runs/${runId}`);
+  redirect(`/dashboard/sessions/${sessionId}/runs/${runId}`);
 }
 
 export async function deleteTelemetryFile(formData: FormData) {
@@ -232,8 +322,6 @@ export async function deleteTelemetryFile(formData: FormData) {
 
   const sessionId = formData.get("sessionId") as string;
   const fileId = formData.get("fileId") as string;
-  // Callers (the session detail page, the MyChron page, the videos page)
-  // each want to land back where they started, not always on /mychron.
   const redirectTo =
     (formData.get("redirectTo") as string | null) || `/dashboard/sessions/${sessionId}`;
   const errorRedirect = (message: string) =>
@@ -261,8 +349,7 @@ export async function deleteTelemetryFile(formData: FormData) {
   }
 
   revalidatePath(`/dashboard/sessions/${sessionId}`);
-  revalidatePath(`/dashboard/sessions/${sessionId}/mychron`);
-  revalidatePath(`/dashboard/sessions/${sessionId}/videos`);
+  revalidatePath(redirectTo);
   redirect(redirectTo);
 }
 
