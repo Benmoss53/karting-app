@@ -3,8 +3,10 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getAuthedUser } from "@/lib/supabase/user";
 import { submitSetupEntry, updateSetupEntry, saveSetupFeedback } from "../actions";
-import { SETUP_SHEET_FIELDS } from "@/lib/setup-sheet";
+import { SETUP_SHEET_FIELDS, SETUP_SHEET_GROUPS } from "@/lib/setup-sheet";
+import { loadSessionsOverview } from "@/lib/session-overview";
 import SetupEntryLog from "@/components/setup-entry-log";
+import KartDiagram from "@/components/kart-diagram";
 import {
   cardClass,
   inputClass,
@@ -13,9 +15,23 @@ import {
   errorBannerClass,
   infoBannerClass,
   backLinkClass,
+  pillClass,
 } from "@/lib/dark-ui";
 
+const DAY_TYPE_LABEL: Record<string, string> = {
+  race_meeting: "Race day",
+  test_day: "Test day",
+};
+
+const FIELD_BY_KEY = new Map(SETUP_SHEET_FIELDS.map((f) => [f.key, f]));
+
 type Entry = Record<string, unknown> & { id: string; session_id: string; created_at: string };
+type WeatherRow = {
+  session_id: string;
+  sky_conditions: string | null;
+  temperature: string | null;
+  track_temp: string | null;
+};
 
 export default async function SetupSheetPage({
   params,
@@ -31,7 +47,7 @@ export default async function SetupSheetPage({
 
   const { data: session } = await supabase
     .from("sessions")
-    .select("id, track_name, session_date")
+    .select("id, track_name, session_date, day_type, setup_notes")
     .eq("id", id)
     .single();
 
@@ -48,13 +64,13 @@ export default async function SetupSheetPage({
 
   // Every other day's changes, grouped by session, most recent day first.
   let priorDays: {
-    session: { track_name: string; session_date: string };
+    session: { id: string; track_name: string; session_date: string; day_type: string | null };
     entries: Entry[];
   }[] = [];
   if (user) {
     const { data: priorSessions } = await supabase
       .from("sessions")
-      .select("id, track_name, session_date")
+      .select("id, track_name, session_date, day_type")
       .eq("driver_id", user.id)
       .lt("session_date", session.session_date)
       .order("session_date", { ascending: false });
@@ -76,7 +92,7 @@ export default async function SetupSheetPage({
     }
 
     priorDays = (priorSessions ?? []).map((s) => ({
-      session: { track_name: s.track_name, session_date: s.session_date },
+      session: { id: s.id, track_name: s.track_name, session_date: s.session_date, day_type: s.day_type },
       entries: entriesBySession.get(s.id) ?? [],
     }));
   }
@@ -100,21 +116,61 @@ export default async function SetupSheetPage({
     pendingSessionLabel = pendingSession;
   }
 
+  // Track conditions + best lap for the header sidebar and the history
+  // table both draw from real data already tracked elsewhere in the app —
+  // no new schema, just reused here.
+  const historySessionIds = [id, ...priorDays.map((d) => d.session.id)];
+  const [{ data: weatherRows }, sessionsOverview] = await Promise.all([
+    supabase
+      .from("weather_conditions")
+      .select("session_id, sky_conditions, temperature, track_temp")
+      .in("session_id", historySessionIds),
+    loadSessionsOverview(supabase),
+  ]);
+
+  const weatherBySessionId = new Map(
+    ((weatherRows ?? []) as WeatherRow[]).map((row) => [row.session_id, row]),
+  );
+  const bestLapBySessionId = new Map(sessionsOverview.map((s) => [s.id, s.bestLap]));
+
+  const todayWeather = weatherBySessionId.get(id) ?? null;
+  const todayBestLap = bestLapBySessionId.get(id) ?? null;
+
+  const historyRows = [
+    { id: session.id, track_name: session.track_name, session_date: session.session_date, day_type: session.day_type },
+    ...priorDays.map((d) => d.session),
+  ];
+
+  const values = pendingEntry ?? latestEntry;
+
   return (
-    <div className="max-w-5xl">
+    <div className="max-w-6xl">
       <Link href={`/dashboard/sessions/${id}`} className={backLinkClass}>
         ← {session.track_name}
       </Link>
-      <h1 className="text-2xl font-bold text-white sm:text-3xl">Setup sheet</h1>
-      <p className="mb-6 text-sm text-neutral-400">{session.track_name}</p>
+      <div className="mb-6 flex flex-wrap items-center gap-2">
+        <h1 className="text-2xl font-bold text-white sm:text-3xl">Setup sheet</h1>
+        {session.day_type && (
+          <span className={pillClass}>{DAY_TYPE_LABEL[session.day_type] ?? session.day_type}</span>
+        )}
+      </div>
+      <p className="mb-6 -mt-4 text-sm text-neutral-400">
+        {session.track_name} <span className="mx-1.5 text-neutral-700">·</span>{" "}
+        <span className="font-mono">{session.session_date}</span>
+      </p>
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_320px]">
-        <div>
-          {error && <p className={`mb-4 ${errorBannerClass}`}>{error}</p>}
+        <div className="flex flex-col gap-6">
+          {error && <p className={errorBannerClass}>{error}</p>}
+
+          <div className={cardClass}>
+            <h2 className="mb-4 text-sm font-medium text-neutral-400">Kart diagram</h2>
+            <KartDiagram values={values} />
+          </div>
 
           {pendingEntry ? (
             <>
-              <form action={updateSetupEntry} className="flex flex-col gap-6">
+              <form action={updateSetupEntry} className="flex flex-col gap-4">
                 <input type="hidden" name="sessionId" value={id} />
                 <input type="hidden" name="entryId" value={pendingEntry.id} />
                 <SpecFields values={pendingEntry} />
@@ -123,7 +179,7 @@ export default async function SetupSheetPage({
                 </button>
               </form>
 
-              <div className={`mt-6 ${cardClass}`}>
+              <div className={cardClass}>
                 <h2 className="mb-1 text-sm font-medium text-neutral-400">Log what that change did</h2>
                 {!pendingIsToday && pendingSessionLabel && (
                   <p className="mb-3 text-xs text-neutral-500">
@@ -153,12 +209,12 @@ export default async function SetupSheetPage({
           ) : (
             <>
               {latestEntry && (
-                <p className={`mb-4 ${infoBannerClass}`}>
+                <p className={infoBannerClass}>
                   Starting from your last logged setup — adjust what changed and submit.
                 </p>
               )}
 
-              <form action={submitSetupEntry} className="flex flex-col gap-6">
+              <form action={submitSetupEntry} className="flex flex-col gap-4">
                 <input type="hidden" name="sessionId" value={session.id} />
                 <SpecFields values={latestEntry} />
                 <button type="submit" className={`self-start ${primaryButtonClass}`}>
@@ -169,32 +225,107 @@ export default async function SetupSheetPage({
           )}
         </div>
 
-        <aside className="lg:sticky lg:top-6 lg:self-start">
-          <div className={`mb-6 ${cardClass}`}>
+        <aside className="flex flex-col gap-6 lg:sticky lg:top-6 lg:self-start">
+          <div className={cardClass}>
+            <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-neutral-500">
+              Track conditions
+            </h2>
+            {todayWeather ? (
+              <dl className="flex flex-col gap-2 text-sm">
+                {todayWeather.temperature && (
+                  <div className="flex items-center justify-between">
+                    <dt className="text-neutral-400">Air temp</dt>
+                    <dd className="font-mono text-neutral-100">{todayWeather.temperature}</dd>
+                  </div>
+                )}
+                {todayWeather.track_temp && (
+                  <div className="flex items-center justify-between">
+                    <dt className="text-neutral-400">Track temp</dt>
+                    <dd className="font-mono text-neutral-100">{todayWeather.track_temp}</dd>
+                  </div>
+                )}
+                {todayWeather.sky_conditions && (
+                  <div className="flex items-center justify-between">
+                    <dt className="text-neutral-400">Weather</dt>
+                    <dd className="capitalize text-neutral-100">{todayWeather.sky_conditions}</dd>
+                  </div>
+                )}
+              </dl>
+            ) : (
+              <p className="text-sm text-neutral-500">No weather logged for this day.</p>
+            )}
+          </div>
+
+          {session.setup_notes && (
+            <div className={cardClass}>
+              <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                Notes
+              </h2>
+              <p className="whitespace-pre-wrap text-sm text-neutral-200">{session.setup_notes}</p>
+            </div>
+          )}
+
+          <div className={cardClass}>
+            <h2 className="mb-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">
+              Best lap
+            </h2>
+            <p className="font-mono text-2xl font-semibold text-red-400">{todayBestLap ?? "—"}</p>
+            <p className="mt-0.5 text-xs text-neutral-500">This day</p>
+          </div>
+
+          <div className={cardClass}>
+            <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-neutral-500">
+              Setup history
+            </h2>
+            <div className="-mx-2 overflow-x-auto">
+              <table className="w-full min-w-[380px] text-left text-xs">
+                <thead>
+                  <tr className="text-neutral-500">
+                    <th className="px-2 pb-2 font-medium">Date</th>
+                    <th className="px-2 pb-2 font-medium">Track</th>
+                    <th className="px-2 pb-2 font-medium">Type</th>
+                    <th className="px-2 pb-2 font-medium">Best lap</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-neutral-800">
+                  {historyRows.map((row) => (
+                    <tr key={row.id} className={row.id === id ? "text-white" : "text-neutral-300"}>
+                      <td className="whitespace-nowrap px-2 py-2 font-mono">{row.session_date}</td>
+                      <td className="max-w-[100px] truncate px-2 py-2">{row.track_name}</td>
+                      <td className="px-2 py-2">{row.day_type ? (DAY_TYPE_LABEL[row.day_type] ?? row.day_type) : "—"}</td>
+                      <td className="px-2 py-2 font-mono">{bestLapBySessionId.get(row.id) ?? "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className={cardClass}>
             <h2 className="mb-3 text-sm font-medium text-neutral-400">This day&apos;s log</h2>
             <SetupEntryLog entries={(todayEntries ?? []) as Entry[]} />
           </div>
 
-          <h2 className="mb-3 text-sm font-medium text-neutral-400">Previous days</h2>
-          {priorDays.length === 0 ? (
-            <p className="text-sm text-neutral-500">No previous days logged yet.</p>
-          ) : (
-            <ul className="flex max-h-[calc(100vh-8rem)] flex-col gap-3 overflow-y-auto pr-1">
-              {priorDays.map(({ session: priorSession, entries }, index) => (
-                <li
-                  key={`${priorSession.session_date}-${index}`}
-                  className="rounded-2xl border border-neutral-800 bg-neutral-900 p-4 shadow-sm"
-                >
-                  <div className="mb-2 flex items-center justify-between gap-2">
-                    <span className="font-medium text-white">{priorSession.track_name}</span>
-                    <span className="font-mono text-xs text-neutral-500">
-                      {priorSession.session_date}
-                    </span>
-                  </div>
-                  <SetupEntryLog entries={entries} compact />
-                </li>
-              ))}
-            </ul>
+          {priorDays.length > 0 && (
+            <div>
+              <h2 className="mb-3 text-sm font-medium text-neutral-400">Previous days</h2>
+              <ul className="flex max-h-[calc(100vh-8rem)] flex-col gap-3 overflow-y-auto pr-1">
+                {priorDays.map(({ session: priorSession, entries }, index) => (
+                  <li
+                    key={`${priorSession.session_date}-${index}`}
+                    className="rounded-2xl border border-neutral-800 bg-neutral-900 p-4 shadow-sm"
+                  >
+                    <div className="mb-2 flex items-center justify-between gap-2">
+                      <span className="font-medium text-white">{priorSession.track_name}</span>
+                      <span className="font-mono text-xs text-neutral-500">
+                        {priorSession.session_date}
+                      </span>
+                    </div>
+                    <SetupEntryLog entries={entries} compact />
+                  </li>
+                ))}
+              </ul>
+            </div>
           )}
         </aside>
       </div>
@@ -202,7 +333,7 @@ export default async function SetupSheetPage({
   );
 }
 
-function Field({
+function Row({
   label,
   name,
   defaultValue,
@@ -212,11 +343,17 @@ function Field({
   defaultValue?: string | null;
 }) {
   return (
-    <div>
-      <label htmlFor={name} className={labelClass}>
+    <div className="flex items-center justify-between gap-3 py-2">
+      <label htmlFor={name} className="text-sm text-neutral-300">
         {label}
       </label>
-      <input id={name} name={name} type="text" defaultValue={defaultValue ?? ""} className={inputClass} />
+      <input
+        id={name}
+        name={name}
+        type="text"
+        defaultValue={defaultValue ?? ""}
+        className="w-32 rounded-lg border border-neutral-700 bg-neutral-800/80 px-2.5 py-1.5 text-right font-mono text-sm text-white shadow-sm transition-colors focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500 sm:w-36"
+      />
     </div>
   );
 }
@@ -224,51 +361,27 @@ function Field({
 function SpecFields({ values }: { values: Record<string, unknown> | null }) {
   return (
     <>
-      <div className={cardClass}>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          {SETUP_SHEET_FIELDS.filter(
-            ({ key }) => key !== "seat_position_a" && key !== "seat_position_b",
-          ).map(({ label, name, key }) => (
-            <Field key={key} label={label} name={name} defaultValue={values?.[key] as string | null | undefined} />
-          ))}
-        </div>
-      </div>
-
-      <div className={cardClass}>
-        <h2 className="mb-4 text-sm font-medium text-neutral-400">Seat position</h2>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div>
-            <label htmlFor="seatPositionA" className={labelClass}>
-              A
-            </label>
-            <p className="mb-1.5 text-xs text-neutral-500">
-              Distance above/below bottom of chassis rail
-            </p>
-            <input
-              id="seatPositionA"
-              name="seatPositionA"
-              type="text"
-              defaultValue={(values?.seat_position_a as string) ?? ""}
-              className={inputClass}
-            />
-          </div>
-          <div>
-            <label htmlFor="seatPositionB" className={labelClass}>
-              B
-            </label>
-            <p className="mb-1.5 text-xs text-neutral-500">
-              Measured at 45° angle from axle to seat back
-            </p>
-            <input
-              id="seatPositionB"
-              name="seatPositionB"
-              type="text"
-              defaultValue={(values?.seat_position_b as string) ?? ""}
-              className={inputClass}
-            />
+      {SETUP_SHEET_GROUPS.map((group) => (
+        <div key={group.title} className={cardClass}>
+          <h2 className="mb-1 flex items-center gap-2 text-sm font-medium text-neutral-300">
+            <span className="h-3.5 w-1 rounded-full bg-red-600" aria-hidden />
+            {group.title.toUpperCase()}
+          </h2>
+          <div className="divide-y divide-neutral-800">
+            {group.keys.map((key) => {
+              const field = FIELD_BY_KEY.get(key)!;
+              return (
+                <Row
+                  key={key}
+                  label={field.label}
+                  name={field.name}
+                  defaultValue={values?.[key] as string | null | undefined}
+                />
+              );
+            })}
           </div>
         </div>
-      </div>
+      ))}
     </>
   );
 }

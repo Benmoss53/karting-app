@@ -21,6 +21,51 @@ export const SETUP_SHEET_FIELDS: { label: string; name: string; key: string }[] 
   { label: "Seat position B", name: "seatPositionB", key: "seat_position_b" },
 ];
 
+// Groups the flat field list into the sections the setup sheet UI renders
+// as separate cards (Front End / Rear End / Chassis / Drivetrain). Every
+// key in SETUP_SHEET_FIELDS appears in exactly one group.
+export const SETUP_SHEET_GROUPS: { title: string; keys: string[] }[] = [
+  {
+    title: "Front end",
+    keys: [
+      "front_upper_crash_bar",
+      "front_lower_crash_bar",
+      "camber",
+      "caster",
+      "toe",
+      "front_track",
+      "front_ride_height",
+      "ackerman",
+    ],
+  },
+  {
+    title: "Rear end",
+    keys: ["torsion_bar", "axle", "rear_ride_height", "rear_bar", "third_bearing"],
+  },
+  {
+    title: "Chassis",
+    keys: ["sidepods", "seat_position_a", "seat_position_b"],
+  },
+  {
+    title: "Drivetrain",
+    keys: ["front_sprocket", "rear_sprocket", "front_wheels", "rear_wheels"],
+  },
+];
+
+// The subset of fields called out on the kart diagram, paired with roughly
+// where they live on the kart (front vs rear) so the diagram can lay them
+// out left/right.
+export const KART_DIAGRAM_HOTSPOTS: { side: "front" | "rear"; key: string }[] = [
+  { side: "front", key: "camber" },
+  { side: "front", key: "toe" },
+  { side: "front", key: "caster" },
+  { side: "front", key: "front_ride_height" },
+  { side: "rear", key: "axle" },
+  { side: "rear", key: "rear_bar" },
+  { side: "rear", key: "third_bearing" },
+  { side: "rear", key: "rear_ride_height" },
+];
+
 type SheetValues = Record<string, unknown> | null | undefined;
 
 /**
