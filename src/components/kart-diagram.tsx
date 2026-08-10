@@ -19,121 +19,125 @@ const ROW_Y = [70, 170, 270, 370];
 const BOX_H = 64;
 
 function KartIllustration() {
+  const stroke = "var(--kart-diagram-stroke, #71717a)";
+  const strokeSoft = "var(--kart-diagram-stroke-soft, #52525b)";
+
   return (
-    <g>
-      {/* frame tube rails + cross-bracing, drawn first so everything else sits on top */}
-      <g stroke="var(--kart-diagram-stroke, #52525b)" strokeWidth={2} fill="none" opacity={0.7}>
-        <line x1={278} y1={112} x2={622} y2={112} />
-        <line x1={278} y1={347} x2={622} y2={347} />
-        <line x1={340} y1={90} x2={560} y2={370} />
-        <line x1={560} y1={90} x2={340} y2={370} />
-        {/* stub-axle arms from rail to each wheel hub */}
+    <g fill="none">
+      {/* floor tray, drawn first so the frame/seat sit on top of it */}
+      <rect x={393} y={185} width={114} height={210} rx={14} stroke={strokeSoft} strokeWidth={1} opacity={0.45} />
+
+      {/* bare tube spaceframe */}
+      <g stroke={stroke} strokeWidth={2.5} strokeLinecap="round">
+        {/* main side rails, front hoop to rear hoop */}
+        <path d="M 330 70 C 290 75, 278 95, 278 112 L 278 347 C 278 364, 290 384, 330 390" />
+        <path d="M 570 70 C 610 75, 622 95, 622 112 L 622 347 C 622 364, 610 384, 570 390" />
+        {/* front + rear hoops */}
+        <path d="M 330 70 C 370 50, 430 45, 450 45 C 470 45, 530 50, 570 70" />
+        <path d="M 330 390 C 370 408, 430 413, 450 413 C 470 413, 530 408, 570 390" />
+        {/* cross-bracing */}
+        <line x1={340} y1={95} x2={560} y2={365} strokeWidth={1.5} opacity={0.6} />
+        <line x1={560} y1={95} x2={340} y2={365} strokeWidth={1.5} opacity={0.6} />
+        {/* stub-axle arms out to each wheel hub */}
         <line x1={305} y1={112} x2={278} y2={112} />
         <line x1={595} y1={112} x2={622} y2={112} />
         <line x1={305} y1={347} x2={278} y2={347} />
         <line x1={595} y1={347} x2={622} y2={347} />
       </g>
 
-      {/* front bumper */}
-      <rect
-        x={255}
-        y={18}
-        width={390}
-        height={20}
-        rx={10}
-        stroke="var(--kart-diagram-stroke, #52525b)"
-        strokeWidth={2}
-        fill="none"
-      />
-      {/* rear bumper */}
-      <rect
-        x={255}
-        y={422}
-        width={390}
-        height={20}
-        rx={10}
-        stroke="var(--kart-diagram-stroke, #52525b)"
-        strokeWidth={2}
-        fill="none"
-      />
-
-      {/* body pod */}
-      <rect
-        x={340}
-        y={40}
-        width={220}
-        height={380}
-        rx={50}
-        stroke="var(--kart-diagram-stroke, #52525b)"
-        strokeWidth={2}
-        fill="none"
-      />
-      {/* radiator */}
-      <rect
-        x={420}
-        y={55}
-        width={60}
-        height={28}
-        rx={4}
-        stroke="var(--kart-diagram-stroke, #52525b)"
-        strokeWidth={1.5}
-        fill="none"
-      />
-      <line x1={428} y1={55} x2={428} y2={83} stroke="var(--kart-diagram-stroke, #52525b)" strokeWidth={1} opacity={0.6} />
-      <line x1={438} y1={55} x2={438} y2={83} stroke="var(--kart-diagram-stroke, #52525b)" strokeWidth={1} opacity={0.6} />
-      <line x1={448} y1={55} x2={448} y2={83} stroke="var(--kart-diagram-stroke, #52525b)" strokeWidth={1} opacity={0.6} />
-      <line x1={458} y1={55} x2={458} y2={83} stroke="var(--kart-diagram-stroke, #52525b)" strokeWidth={1} opacity={0.6} />
-      <line x1={468} y1={55} x2={468} y2={83} stroke="var(--kart-diagram-stroke, #52525b)" strokeWidth={1} opacity={0.6} />
-
-      {/* steering column + wheel */}
-      <line x1={444} y1={152} x2={444} y2={205} stroke="var(--kart-diagram-stroke, #52525b)" strokeWidth={2} />
-      <line x1={456} y1={152} x2={456} y2={205} stroke="var(--kart-diagram-stroke, #52525b)" strokeWidth={2} />
-      <rect x={438} y={173} width={24} height={12} rx={3} stroke="var(--kart-diagram-stroke, #52525b)" strokeWidth={1.5} fill="none" />
-      <circle cx={450} cy={120} r={32} stroke="var(--kart-diagram-stroke, #52525b)" strokeWidth={2} fill="none" />
-      <circle cx={450} cy={120} r={6} stroke="var(--kart-diagram-stroke, #52525b)" strokeWidth={1.5} fill="none" />
-
-      {/* seat + headrest */}
-      <ellipse cx={450} cy={300} rx={65} ry={85} stroke="var(--kart-diagram-stroke, #52525b)" strokeWidth={2} fill="none" />
-      <rect x={410} y={225} width={80} height={18} rx={8} stroke="var(--kart-diagram-stroke, #52525b)" strokeWidth={1.5} fill="none" />
-
-      {/* engine block + sprockets + chain */}
-      <rect x={410} y={340} width={60} height={45} rx={6} stroke="var(--kart-diagram-stroke, #52525b)" strokeWidth={1.5} fill="none" />
-      <circle cx={440} cy={385} r={9} stroke="var(--kart-diagram-stroke, #52525b)" strokeWidth={1.5} fill="none" />
-      <circle cx={440} cy={347} r={16} stroke="var(--kart-diagram-stroke, #52525b)" strokeWidth={1.5} fill="none" />
-      <line x1={440} y1={331} x2={440} y2={356} stroke="var(--kart-diagram-stroke, #52525b)" strokeWidth={1} opacity={0.6} />
-      {/* exhaust pipe sweeping to the side */}
+      {/* nose cone */}
       <path
-        d="M 470 355 C 520 355, 540 380, 540 410"
-        stroke="var(--kart-diagram-stroke, #52525b)"
+        d="M 420 8 C 425 -2, 475 -2, 480 8 L 478 24 C 465 30, 435 30, 422 24 Z"
+        stroke={stroke}
         strokeWidth={2}
-        fill="none"
-        opacity={0.7}
+      />
+      {/* front bumper + stays */}
+      <rect x={258} y={30} width={384} height={13} rx={6.5} stroke={stroke} strokeWidth={2} />
+      <line x1={310} y1={43} x2={330} y2={68} stroke={strokeSoft} strokeWidth={1.5} />
+      <line x1={590} y1={43} x2={570} y2={68} stroke={strokeSoft} strokeWidth={1.5} />
+      {/* rear bumper + stays + number plate */}
+      <rect x={258} y={417} width={384} height={13} rx={6.5} stroke={stroke} strokeWidth={2} />
+      <line x1={310} y1={417} x2={330} y2={392} stroke={strokeSoft} strokeWidth={1.5} />
+      <line x1={590} y1={417} x2={570} y2={392} stroke={strokeSoft} strokeWidth={1.5} />
+      <rect x={420} y={398} width={60} height={14} rx={3} stroke={strokeSoft} strokeWidth={1.5} opacity={0.7} />
+
+      {/* radiator, front-mounted */}
+      <rect x={420} y={58} width={60} height={26} rx={4} stroke={strokeSoft} strokeWidth={1.5} />
+      {[428, 438, 448, 458, 468].map((x) => (
+        <line key={x} x1={x} y1={58} x2={x} y2={84} stroke={strokeSoft} strokeWidth={1} opacity={0.6} />
+      ))}
+
+      {/* steering column + wheel with spokes */}
+      <line x1={444} y1={148} x2={444} y2={200} stroke={stroke} strokeWidth={2} />
+      <line x1={456} y1={148} x2={456} y2={200} stroke={stroke} strokeWidth={2} />
+      <rect x={437} y={168} width={26} height={13} rx={3} stroke={stroke} strokeWidth={1.5} />
+      <circle cx={450} cy={116} r={30} stroke={stroke} strokeWidth={2.5} />
+      <circle cx={450} cy={116} r={5} stroke={stroke} strokeWidth={1.5} />
+      <line x1={450} y1={90} x2={450} y2={111} stroke={stroke} strokeWidth={1.5} />
+      <line x1={429} y1={130} x2={445} y2={120} stroke={stroke} strokeWidth={1.5} />
+      <line x1={471} y1={130} x2={455} y2={120} stroke={stroke} strokeWidth={1.5} />
+
+      {/* contoured bucket seat */}
+      <path
+        d="M 392 222 C 368 226, 358 258, 364 292 C 369 330, 382 362, 408 386
+           C 426 401, 474 401, 492 386 C 518 362, 531 330, 536 292
+           C 542 258, 532 226, 508 222 C 486 216, 414 216, 392 222 Z"
+        stroke={stroke}
+        strokeWidth={2.5}
+      />
+      <path d="M 400 250 C 392 275, 392 315, 404 345" stroke={strokeSoft} strokeWidth={1} opacity={0.6} />
+      <path d="M 500 250 C 508 275, 508 315, 496 345" stroke={strokeSoft} strokeWidth={1} opacity={0.6} />
+
+      {/* engine, sprockets, chain, exhaust — offset to one side like a real install */}
+      <rect x={470} y={330} width={58} height={44} rx={6} stroke={strokeSoft} strokeWidth={1.5} />
+      <circle cx={499} cy={374} r={9} stroke={strokeSoft} strokeWidth={1.5} />
+      <circle cx={585} cy={347} r={17} stroke={strokeSoft} strokeWidth={1.5} />
+      <line x1={499} y1={365} x2={585} y2={352} stroke={strokeSoft} strokeWidth={1} opacity={0.6} />
+      <line x1={499} y1={383} x2={585} y2={362} stroke={strokeSoft} strokeWidth={1} opacity={0.6} />
+      <path
+        d="M 470 345 C 430 345, 415 365, 415 410"
+        stroke={strokeSoft}
+        strokeWidth={2}
+        opacity={0.75}
       />
 
-      {/* side pods */}
-      <rect x={305} y={175} width={35} height={95} rx={10} stroke="var(--kart-diagram-stroke, #52525b)" strokeWidth={2} fill="none" />
-      <rect x={560} y={175} width={35} height={95} rx={10} stroke="var(--kart-diagram-stroke, #52525b)" strokeWidth={2} fill="none" />
+      {/* side pods, streamlined */}
+      <path d="M 300 178 L 340 185 L 340 268 L 300 275 C 292 250, 292 200, 300 178 Z" stroke={stroke} strokeWidth={2} />
+      <path d="M 600 178 L 560 185 L 560 268 L 600 275 C 608 250, 608 200, 600 178 Z" stroke={stroke} strokeWidth={2} />
 
-      {/* wheels, each with a brake disc */}
+      {/* wheels: tire + rim + brake disc */}
       {[
-        { x: 250, y: 55 },
-        { x: 595, y: 55 },
-        { x: 250, y: 290 },
-        { x: 595, y: 290 },
-      ].map(({ x, y }) => (
-        <g key={`${x}-${y}`}>
-          <rect x={x} y={y} width={55} height={115} rx={12} stroke="var(--kart-diagram-stroke, #52525b)" strokeWidth={2} fill="none" />
-          <circle
-            cx={x < 400 ? x + 40 : x + 15}
-            cy={y + 57}
-            r={13}
-            stroke="var(--kart-diagram-stroke, #52525b)"
-            strokeWidth={1.5}
-            fill="none"
-            opacity={0.7}
-          />
-        </g>
-      ))}
+        { x: 250, y: 52 },
+        { x: 595, y: 52 },
+        { x: 250, y: 288 },
+        { x: 595, y: 288 },
+      ].map(({ x, y }) => {
+        const innerSide = x < 400 ? "right" : "left";
+        return (
+          <g key={`${x}-${y}`}>
+            <rect x={x} y={y} width={55} height={118} rx={10} stroke={stroke} strokeWidth={2.5} />
+            <rect
+              x={innerSide === "right" ? x + 24 : x + 6}
+              y={y + 10}
+              width={16}
+              height={98}
+              rx={6}
+              stroke={strokeSoft}
+              strokeWidth={1.5}
+              opacity={0.8}
+            />
+            <circle
+              cx={innerSide === "right" ? x + 42 : x + 13}
+              cy={y + 59}
+              r={12}
+              stroke={strokeSoft}
+              strokeWidth={1.5}
+              opacity={0.85}
+            />
+            <circle cx={innerSide === "right" ? x + 42 : x + 13} cy={y + 59} r={3} fill={strokeSoft} opacity={0.85} />
+          </g>
+        );
+      })}
     </g>
   );
 }
