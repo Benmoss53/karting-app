@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 import type { AimCsvSummary } from "@/lib/aim-csv";
 import { getWeatherForLocation } from "@/lib/weather";
 
-const DAY_TYPE_VALUES = ["race_meeting", "test_day"];
+const DAY_TYPE_VALUES = ["race_meeting", "practice", "test_day", "other"];
 const SKY_CONDITIONS_VALUES = ["sunny", "overcast"];
 
 function textOrNull(formData: FormData, key: string) {
@@ -34,6 +34,7 @@ export async function createSession(formData: FormData) {
 
   const trackName = formData.get("trackName") as string;
   const sessionDate = formData.get("sessionDate") as string;
+  const sessionTime = textOrNull(formData, "sessionTime");
   const setupNotes = formData.get("setupNotes") as string;
   const dayType = enumOrNull(formData, "dayType", DAY_TYPE_VALUES);
   const kart = textOrNull(formData, "kart");
@@ -45,6 +46,7 @@ export async function createSession(formData: FormData) {
       driver_id: user.id,
       track_name: trackName,
       session_date: sessionDate || undefined,
+      session_time: sessionTime,
       setup_notes: setupNotes || null,
       day_type: dayType,
       kart,

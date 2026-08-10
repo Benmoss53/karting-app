@@ -7,10 +7,42 @@ export type SessionOverview = {
   id: string;
   track_name: string;
   session_date: string;
+  session_time: string | null;
   day_type: string | null;
   bestLap: string | null;
+  bestLapSeconds: number | null;
   sessionNumber: number;
 };
+
+export type DashboardStats = {
+  sessionsThisMonth: number;
+  tracksVisited: number;
+  bestLapOverall: string | null;
+};
+
+/** Home-screen stat tiles, derived from the same session list — no extra queries. */
+export function computeDashboardStats(sessions: SessionOverview[]): DashboardStats {
+  const now = new Date();
+  const sessionsThisMonth = sessions.filter((s) => {
+    const d = new Date(`${s.session_date}T00:00:00`);
+    return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+  }).length;
+
+  const tracksVisited = new Set(sessions.map((s) => s.track_name.trim().toLowerCase())).size;
+
+  let bestSeconds: number | null = null;
+  for (const s of sessions) {
+    if (s.bestLapSeconds != null && (bestSeconds === null || s.bestLapSeconds < bestSeconds)) {
+      bestSeconds = s.bestLapSeconds;
+    }
+  }
+
+  return {
+    sessionsThisMonth,
+    tracksVisited,
+    bestLapOverall: bestSeconds === null ? null : formatLapSeconds(bestSeconds),
+  };
+}
 
 /**
  * Sessions for the current driver, newest first, each annotated with its
@@ -27,7 +59,7 @@ export async function loadSessionsOverview(
 ): Promise<SessionOverview[]> {
   const { data: sessions } = await supabase
     .from("sessions")
-    .select("id, track_name, session_date, day_type")
+    .select("id, track_name, session_date, session_time, day_type")
     .order("session_date", { ascending: false });
 
   if (!sessions || sessions.length === 0) return [];
@@ -79,6 +111,7 @@ export async function loadSessionsOverview(
     return {
       ...session,
       bestLap: bestLapSeconds === undefined ? null : formatLapSeconds(bestLapSeconds),
+      bestLapSeconds: bestLapSeconds === undefined ? null : bestLapSeconds,
       sessionNumber: sessionNumber.get(session.id) ?? 0,
     };
   });

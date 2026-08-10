@@ -13,8 +13,8 @@ export default function AnalysisPage() {
         <p className="font-semibold text-white">Coming soon</p>
         <p className="max-w-sm text-sm text-neutral-500">
           Cross-session trends — best lap progression, telemetry comparisons, and setup-vs-pace
-          insights — are on the way. For now, ask the AI coach on the Home tab about patterns
-          across your sessions.
+          insights — are on the way. For now, ask the AI Assistant (Home → AI Assistant) about
+          patterns across your sessions.
         </p>
       </div>
     </div>

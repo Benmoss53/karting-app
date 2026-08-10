@@ -29,6 +29,14 @@ function AnalysisIcon({ className }: { className?: string }) {
   );
 }
 
+function TracksIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className={className} aria-hidden>
+      <path d="M4 20c0-6 3-10 8-10s6-6 12-6" />
+    </svg>
+  );
+}
+
 function MoreIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden>
@@ -43,6 +51,7 @@ const ITEMS = [
   { href: "/dashboard", label: "Home", Icon: HomeIcon, exact: true },
   { href: "/dashboard/sessions", label: "Sessions", Icon: SessionsIcon, exact: false },
   { href: "/dashboard/analysis", label: "Analysis", Icon: AnalysisIcon, exact: false },
+  { href: "/dashboard/tracks", label: "Tracks", Icon: TracksIcon, exact: false },
   { href: "/dashboard/more", label: "More", Icon: MoreIcon, exact: false },
 ];
 

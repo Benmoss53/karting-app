@@ -12,7 +12,9 @@ import type { AimCsvSummary } from "@/lib/aim-csv";
 
 const DAY_TYPE_LABEL: Record<string, string> = {
   race_meeting: "Race meeting",
+  practice: "Practice",
   test_day: "Test day",
+  other: "Other",
 };
 
 const FILE_TYPE_BADGE: Record<string, string> = {
