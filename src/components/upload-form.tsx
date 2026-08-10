@@ -8,11 +8,13 @@ import { cardClass, inputClass, labelClass, primaryButtonClass, errorBannerClass
 
 export default function UploadForm({
   sessionId,
+  runId,
   driverId,
   allowedTypes,
   label = "Upload a file",
 }: {
   sessionId: string;
+  runId: string;
   driverId: string;
   allowedTypes: { value: string; label: string }[];
   label?: string;
@@ -54,6 +56,7 @@ export default function UploadForm({
       .from("telemetry_files")
       .insert({
         session_id: sessionId,
+        run_id: runId,
         file_type: fileType,
         storage_path: storagePath,
         file_name: file.name,

@@ -126,27 +126,38 @@ export async function askAiCoach(question: string) {
 
   const sessionIds = (sessions ?? []).map((s) => s.id);
 
-  const [{ data: setupEntries }, { data: weatherRows }, { data: telemetryFiles }] = sessionIds.length
-    ? await Promise.all([
-        supabase
-          .from("setup_sheets")
-          .select("*")
-          .in("session_id", sessionIds)
-          .order("created_at", { ascending: true }),
-        supabase.from("weather_conditions").select("*").in("session_id", sessionIds),
-        supabase
-          .from("telemetry_files")
-          .select("id, session_id, file_name")
-          .in("session_id", sessionIds)
-          .in("file_type", ["mychron", "other"]),
-      ])
-    : [{ data: [] }, { data: [] }, { data: [] }];
+  const [{ data: runs }, { data: setupEntries }, { data: weatherRows }, { data: telemetryFiles }] =
+    sessionIds.length
+      ? await Promise.all([
+          supabase
+            .from("runs")
+            .select("id, run_number, session_id")
+            .in("session_id", sessionIds)
+            .order("run_number", { ascending: true }),
+          supabase
+            .from("setup_sheets")
+            .select("*")
+            .in("session_id", sessionIds)
+            .order("created_at", { ascending: true }),
+          supabase.from("weather_conditions").select("*").in("session_id", sessionIds),
+          supabase
+            .from("telemetry_files")
+            .select("id, run_id, file_name")
+            .in("session_id", sessionIds)
+            .in("file_type", ["mychron", "other"]),
+        ])
+      : [{ data: [] }, { data: [] }, { data: [] }, { data: [] }];
 
-  const entriesBySession = new Map<string, Record<string, unknown>[]>();
+  const runsBySession = new Map<string, { id: string; run_number: number }[]>();
+  for (const run of runs ?? []) {
+    const list = runsBySession.get(run.session_id) ?? [];
+    list.push(run);
+    runsBySession.set(run.session_id, list);
+  }
+
+  const entryByRun = new Map<string, Record<string, unknown>>();
   for (const row of setupEntries ?? []) {
-    const list = entriesBySession.get(row.session_id as string) ?? [];
-    list.push(row);
-    entriesBySession.set(row.session_id as string, list);
+    if (row.run_id) entryByRun.set(row.run_id as string, row);
   }
   const weatherBySession = new Map((weatherRows ?? []).map((row) => [row.session_id, row]));
 
@@ -161,47 +172,56 @@ export async function askAiCoach(question: string) {
     (analyses ?? []).map((a) => [a.telemetry_file_id as string, a.summary as AimCsvSummary]),
   );
 
-  const telemetryBySession = new Map<string, { fileName: string; summary: AimCsvSummary }[]>();
+  const telemetryByRun = new Map<string, { fileName: string; summary: AimCsvSummary }[]>();
   for (const file of telemetryFiles ?? []) {
+    if (!file.run_id) continue;
     const summary = summaryByFileId.get(file.id);
     if (!summary) continue;
-    const list = telemetryBySession.get(file.session_id) ?? [];
+    const list = telemetryByRun.get(file.run_id) ?? [];
     list.push({ fileName: file.file_name, summary });
-    telemetryBySession.set(file.session_id, list);
+    telemetryByRun.set(file.run_id, list);
   }
 
   const dayBlocks = (sessions ?? []).map((s) => {
-    const entries = entriesBySession.get(s.id) ?? [];
     const weather = compactRow(weatherBySession.get(s.id));
-    const telemetry = telemetryBySession.get(s.id) ?? [];
+    const dayRuns = runsBySession.get(s.id) ?? [];
 
     const lines = [
       `${s.session_date} — ${s.track_name}${s.day_type ? ` (${s.day_type})` : ""}${s.kart ? `, kart ${s.kart}` : ""}${s.motor ? `, motor ${s.motor}` : ""}`,
     ];
     if (weather) lines.push(`  Weather: ${JSON.stringify(weather)}`);
 
-    entries.forEach((entry, index) => {
-      const computedChanges = entry.computed_changes as string | null | undefined;
-      const feedback = entry.feedback as string | null | undefined;
-      const setup = compactRow({ ...entry, computed_changes: null, feedback: null });
-      lines.push(`  Change ${index + 1}:`);
-      if (setup) lines.push(`    Setup: ${JSON.stringify(setup)}`);
-      if (computedChanges) lines.push(`    Changed from previous entry: ${computedChanges}`);
-      lines.push(`    How it felt: ${feedback ?? "not logged yet"}`);
-    });
+    dayRuns.forEach((run) => {
+      const entry = entryByRun.get(run.id);
+      const telemetry = telemetryByRun.get(run.id) ?? [];
+      if (!entry && telemetry.length === 0) return;
 
-    telemetry.forEach(({ fileName, summary }) => {
-      const highlights = [
-        summary.maxRpm != null ? `max RPM ${Math.round(summary.maxRpm)}` : null,
-        summary.maxSpeedKmh != null ? `max speed ${summary.maxSpeedKmh.toFixed(1)} km/h` : null,
-        summary.avgSpeedKmh != null ? `avg speed ${summary.avgSpeedKmh.toFixed(1)} km/h` : null,
-        summary.maxLateralG != null ? `max lateral G ${summary.maxLateralG.toFixed(2)}` : null,
-        summary.avgLambda != null ? `avg lambda ${summary.avgLambda.toFixed(2)}` : null,
-        summary.laps?.length ? `${summary.laps.length} laps` : null,
-      ]
-        .filter(Boolean)
-        .join(", ");
-      lines.push(`  Telemetry (${fileName}): ${highlights || "no stats available"}`);
+      lines.push(`  Session ${run.run_number}:`);
+
+      if (entry) {
+        const computedChanges = entry.computed_changes as string | null | undefined;
+        const feedback = entry.feedback as string | null | undefined;
+        const setup = compactRow({ ...entry, computed_changes: null, feedback: null });
+        if (setup) lines.push(`    Setup: ${JSON.stringify(setup)}`);
+        if (computedChanges) lines.push(`    Changed from previous entry: ${computedChanges}`);
+        lines.push(`    How it felt: ${feedback ?? "not logged yet"}`);
+      } else {
+        lines.push(`    No setup change logged for this session.`);
+      }
+
+      telemetry.forEach(({ fileName, summary }) => {
+        const highlights = [
+          summary.maxRpm != null ? `max RPM ${Math.round(summary.maxRpm)}` : null,
+          summary.maxSpeedKmh != null ? `max speed ${summary.maxSpeedKmh.toFixed(1)} km/h` : null,
+          summary.avgSpeedKmh != null ? `avg speed ${summary.avgSpeedKmh.toFixed(1)} km/h` : null,
+          summary.maxLateralG != null ? `max lateral G ${summary.maxLateralG.toFixed(2)}` : null,
+          summary.avgLambda != null ? `avg lambda ${summary.avgLambda.toFixed(2)}` : null,
+          summary.laps?.length ? `${summary.laps.length} laps` : null,
+        ]
+          .filter(Boolean)
+          .join(", ");
+        lines.push(`    Telemetry (${fileName}): ${highlights || "no stats available"}`);
+      });
     });
 
     return lines.join("\n");
@@ -209,7 +229,7 @@ export async function askAiCoach(question: string) {
 
   const context =
     dayBlocks.length > 0
-      ? `Driver's full history across every logged session, oldest first. Each day can have multiple setup changes logged in sequence — a session's changes are numbered in the order they happened:\n\n${dayBlocks.join("\n\n")}`
+      ? `Driver's full history across every logged day, oldest first. Each day can have several sessions (runs at the track), each with its own optional setup change and telemetry — sessions are numbered in the order they happened:\n\n${dayBlocks.join("\n\n")}`
       : "No sessions logged yet.";
 
   const anthropic = new Anthropic();
@@ -219,7 +239,7 @@ export async function askAiCoach(question: string) {
     max_tokens: 1536,
     output_config: { effort: "low" },
     system:
-      "You are an experienced karting race engineer talking directly to your driver, like you're leaning on the kart together after a session. You have the driver's full history across every session they've logged. Each day can have several setup changes logged in sequence, and each change has the full spec at that point, an automatically computed summary of what changed from the previous change, and feedback on how the kart felt afterward — that feedback is what the next change was reacting to. Some days also have telemetry from an analyzed MyChron file: max RPM, max/avg speed, max lateral G, avg lambda, and lap count. Cross-reference the telemetry against the setup and feedback for that day when it's relevant — e.g. a lean lambda reading or a lower max RPM can explain a feel the driver described. Draw on patterns and lessons from every day when they're relevant — mention the specific date/track when you reference a past day. Ground recommendations in the actual logged data rather than generic advice. If there isn't enough history to support a confident recommendation, say so plainly.\n\n" +
+      "You are an experienced karting race engineer talking directly to your driver, like you're leaning on the kart together after a session. You have the driver's full history across every day they've logged. Each day can have several sessions (individual runs at the track that day), and each session can have its own setup change and its own telemetry. A setup change has the full spec at that point, an automatically computed summary of what changed from the previous change, and feedback on how the kart felt afterward — that feedback is what the next change was reacting to. Telemetry, where analyzed, gives max RPM, max/avg speed, max lateral G, avg lambda, and lap count for that specific session. Cross-reference a session's telemetry against its setup and feedback when it's relevant — e.g. a lean lambda reading or a lower max RPM can explain a feel the driver described. Draw on patterns and lessons from every day and session when they're relevant — mention the specific date/track/session when you reference a past one. Ground recommendations in the actual logged data rather than generic advice. If there isn't enough history to support a confident recommendation, say so plainly.\n\n" +
       "Talk like a real person coaching another person, not a computer generating a report. Use plain, everyday words a driver would actually say out loud — 'loosen the rear a touch', not 'consider reducing rear grip coefficient'. Say what you'd say if you were standing next to them: direct, a little conversational, no corporate hedging ('it's important to note', 'as an AI', 'I would recommend considering'). Keep it short — 2-4 sentences for a normal question — and lead with the actual answer, not a restated version of their question. Write in plain sentences, not bullet points or headers, unless they specifically ask you to list out several distinct changes.\n\n" +
       context,
     messages: [{ role: "user", content: question }],
