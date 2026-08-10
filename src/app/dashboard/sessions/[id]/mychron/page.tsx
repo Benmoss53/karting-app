@@ -48,17 +48,20 @@ export default async function MyChronDataPage({
     .in("file_type", ["mychron", "other"])
     .order("uploaded_at", { ascending: false });
 
+  type AnalysisRow = { telemetry_file_id: string; summary: AimCsvSummary };
+
   const fileIds = (files ?? []).map((file) => file.id);
-  const { data: analyses } = fileIds.length
+  // Cast the whole ternary, not just the empty-array branch — the awaited
+  // query's untyped `any[]` result would otherwise collapse the union and
+  // silently drop the type for every downstream use of `analyses`.
+  const { data: analyses } = (fileIds.length
     ? await supabase
         .from("telemetry_analysis")
         .select("telemetry_file_id, summary")
         .in("telemetry_file_id", fileIds)
-    : { data: [] as { telemetry_file_id: string; summary: AimCsvSummary }[] };
+    : { data: [] as AnalysisRow[] }) as { data: AnalysisRow[] | null };
 
-  const analysisByFileId = new Map(
-    (analyses ?? []).map((row) => [row.telemetry_file_id, row.summary as AimCsvSummary]),
-  );
+  const analysisByFileId = new Map((analyses ?? []).map((row) => [row.telemetry_file_id, row.summary]));
 
   const filesWithLinks = await Promise.all(
     (files ?? []).map(async (file) => {
